@@ -1,7 +1,7 @@
 {
   "name": "knex-spatial-plugin",
-  "version": "1.0.1",
-  "description": "",
+  "version": "1.1.0",
+  "description": "A Knex plugin for simplified geometric & geospatial operations in Postgres.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
 
@@ -10,7 +10,7 @@
     "build": "tsc",
     "test": "tsc"
   },
-  "keywords": [],
+  "keywords": ["knex", "postgis", "geospatial", "spatial", "gis", "geometry", "geography", "geometric", "geometrical", "geospatial"],
   "homepage": "https://github.com/justsml/knex-spatial",
   "repository": {
     "url": "https://github.com/justsml/knex-spatial"
