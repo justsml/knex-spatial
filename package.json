@@ -7,11 +7,19 @@
 
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "homepage": "https://github.com/justsml/knex-spatial",
+  "repository": {
+    "url": "https://github.com/justsml/knex-spatial"
+  },
+  "author": {
+    "name": "Dan Levy",
+    "email": "dan@danlevy.net",
+    "url": "https://danlevy.net"
+  },
+  "license": "MIT",
   "peerDependencies": {
     "knex": "^2.5.1"
   },
