@@ -1,11 +1,12 @@
 {
-  "name": "knex-spatial",
-  "version": "1.0.0",
+  "name": "knex-spatial-plugin",
+  "version": "1.0.1",
   "description": "",
   "main": "build/index.js",
   "types": "build/index.d.ts",
 
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "tsc",
     "test": "tsc"
   },
