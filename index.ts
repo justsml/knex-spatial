@@ -87,8 +87,8 @@ export default function knexGeospatial(db: Knex) {
     );
   
     knex.QueryBuilder.extend(
-      'whereDistanceWith',
-      function whereDistanceWith(
+      'whereDistanceWithin',
+      function whereDistanceWithin(
         geoColumnName: string,
         latLonOpts: {
           lat?: number | undefined;
