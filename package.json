@@ -1,10 +1,10 @@
 {
-  "name": "knex-spatial",
-  "version": "1.0.0",
-  "description": "",
+  "name": "knex-spatial-plugin",
+  "type": "commonjs",
+  "version": "0.5.0",
+  "description": "Knex plugin for Postgis geospatial queries.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
-
   "scripts": {
     "build": "tsc",
     "test": "tsc"
