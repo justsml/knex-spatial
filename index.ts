@@ -2,83 +2,152 @@ import 'knex';
 import { Knex, knex } from 'knex';
 
 /**
- * # Knex Full-Text Search Plugin
+ * # Knex Geospatial Plugin
  *
- * This plugin adds some useful methods to the knex query builder: selectWebSearchRank, whereWebSearch.
+ * This plugin adds some useful methods to the knex query builder.
  *
  * ## Usage
  *
  * ```ts
  * import Knex from 'knex';
- * import knexFullTextSearch from '../../shared/knexFullTextSearch';
+ * import KnexSpatialPlugin from 'knex-spatial-plugin';
  *
  * export const db = Knex(config);
- * 
- * knexFullTextSearch(db);
- * 
- * const results = await db('table')
- *   .selectWebSearchRank('tsvector_column', 'search query')
- *   .whereWebSearch('tsvector_column', 'search query')
- *   .orderBy('rank', 'desc');
+ * KnexSpatialPlugin(db);
  * ```
+ * 
+ * ## Methods
+ * 
+ * ### `selectDistance`
+ * 
+ * Add a computed column, `distance` (in meters) based off a given lat & lon.
+ * 
+ * Uses the `ST_Distance` function.
+ * 
+ * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
+ * 
+ * ```ts
+ * import {db} from './knex';
+ * 
+ * export function findNearbyLocations({lat, lon}) {
+ *   // Get locations within 10Km of input location
+ *   return db('locations')
+ *     .select('id', 'name')
+ *     .selectDistance('location', { lat, lon })
+ *     .where('distance', '<', 10000)
+ * }
+ * ```
+ * 
+ * ### `whereDistanceWithin`
+ * 
+ * Spatial: Filters results outside a given radius in meters.
+ * 
+ * Uses the `ST_DWithin` function.
+ * 
+ * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
+ * 
+ * ```ts
+ * import {db} from './knex';
+ * 
+ * export function findNearbyLocations({lat, lon}) {
+ *  // Get locations within 10Km of input location
+ * return db('locations')
+ *  .select('id', 'name')
+ * .whereDistanceWithin('location', { lat, lon, radius: 10000 })
+ * }
+ * ```
+ * 
+ * ## References
+ * 
+ * - [PostGIS Reference](https://postgis.net/docs/ST_Distance.html)
+ * - [Knex Query Builder](https://knexjs.org/#Builder)
  */
-export default function knexFullTextSearch(db: Knex) {
-  // @ts-expect-error
-  if (db['whereDistanceWithinMiles']) return db;
+export default function knexGeospatial(db: Knex) {
+  try {
+    knex.QueryBuilder.extend(
+      'selectDistance',
+      function selectDistance(
+        geoColumnName: string,
+        latLonOpts: { lat: number | undefined; lon: number | undefined },
+        columnAlias = 'distance',
+      ) {
+        const { lat, lon } = latLonOpts;
+  
+        return lat === undefined || lon === undefined
+          ? this
+          : this.select(
+              db.raw('ST_Distance(??, ST_Point(?, ?)) / 1609.34 AS ??', [
+                geoColumnName,
+                lon,
+                lat,
+                columnAlias,
+              ]),
+            );
+      },
+    );
+  
+    knex.QueryBuilder.extend(
+      'whereDistanceWith',
+      function whereDistanceWith(
+        geoColumnName: string,
+        latLonOpts: {
+          lat?: number | undefined;
+          lon?: number | undefined;
+          radius?: number | undefined;
+        } = {},
+      ) {
+        const { lat, lon, radius } = latLonOpts;
+  
+        return lat === undefined || lon === undefined || radius === undefined
+          ? this
+          : this.whereRaw(`ST_DWithin(??, ST_Point(?, ?), ?)`, [
+              geoColumnName,
+              lon,
+              lat,
+              radius,
+            ]);
+      },
+    );
 
-  knex.QueryBuilder.extend(
-    'whereWebSearch',
-    function whereWebSearch(
-      tsVectorColumn: string,
-      query: string | null | undefined,
-    ) {
-      return query === undefined
-        ? this
-        : this.whereRaw(`?? @@ websearch_to_tsquery('simple', ?)`, [
-            tsVectorColumn,
-            query,
-          ]);
-    },
-  );
-  knex.QueryBuilder.extend(
-    'selectWebSearchRank',
-    function selectWebSearchRank(
-      tsVectorColumn: string,
-      query: string | null | undefined,
-      columnAlias = 'rank',
-    ) {
-      return query === undefined
-        ? this
-        : this.select(
-            db.raw(`ts_rank(??, websearch_to_tsquery('simple', ?)) as ??`, [
-              tsVectorColumn,
-              query,
-              columnAlias,
-            ]),
-          );
-    },
-  );
+  } catch (error) {
+    console.error(error);
+  }
 
   return db;
 }
 
 declare module 'knex' {
   namespace Knex {
-    interface QueryInterface<TRecord extends {} = any, TResult = any> {
+    export interface QueryInterface<TRecord extends {} = any, TResult = any> {
 
-      /** Full-text Search: Queries a tsvector column using postgres' websearch_to_tsquery. */
-      whereWebSearch(
-        tsVectorColumn: string,
-        query: string | null | undefined,
-      ): QueryBuilder<TRecord, TResult>;
-
-      /** Full-text Search: Add an FTS search rank column. */
-      selectWebSearchRank(
-        tsVectorColumn: string,
-        query: string | null | undefined,
+      /**
+       * Add a computed column, `distance` (in meters) based off a given lat & lon.
+       *
+       * Uses the `ST_Distance` function.
+       * 
+       * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
+       */
+      selectDistance(
+        geoColumnName: string,
+        latLonOpts: { lat: number | undefined; lon: number | undefined },
         columnAlias?: string,
       ): QueryBuilder<TRecord, TResult>;
 
+      /**
+       * Spatial: Filters results outside a given radius in meters.
+       * 
+       * Uses the `ST_DWithin` function.
+       * 
+       * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
+       */
+      whereDistanceWithin(
+        geoColumnName: string,
+        latLonOpts: {
+          lat: number | undefined;
+          lon: number | undefined;
+          radius: number | undefined;
+        },
+      ): QueryBuilder<TRecord, TResult>;
     }
   }
 }

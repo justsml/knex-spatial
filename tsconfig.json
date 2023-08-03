@@ -25,7 +25,8 @@
     "useUnknownInCatchVariables": false,
     "alwaysStrict": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": false
   },
   "include": [
     "./**/*.ts"
