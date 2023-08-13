@@ -28,12 +28,6 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": false
   },
-  "include": [
-    "./**/*.ts"
-  ],
-  "exclude": [
-    "build",
-    "dist",
-    "node_modules"
-  ]
+  "include": ["./**/*.ts", "!build", "vitest.config.mts"],
+  "exclude": ["build", "dist", "node_modules"]
 }
