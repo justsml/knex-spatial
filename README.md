@@ -1,5 +1,6 @@
 # Knex Spatial Plugin
 
+[![CI Status](https://github.com/justsml/knex-spatial/workflows/test/badge.svg)](https://github.com/justsml/knex-spatial/actions)
 [![NPM version](https://img.shields.io/npm/v/knex-spatial-plugin.svg)](https://www.npmjs.com/package/knex-spatial-plugin)
 [![GitHub stars](https://img.shields.io/github/stars/justsml/knex-spatial.svg?style=social)](https://github.com/justsml/knex-spatial)
 
