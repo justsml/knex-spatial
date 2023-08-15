@@ -37,6 +37,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^0.34.1",
     "knex": "^2.5.1",
+    "nyc": "^15.1.0",
     "prettier": "^3.0.1",
     "sqlite3": "^5.1.6",
     "ts-node": "^10.9.1",
