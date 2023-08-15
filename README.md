@@ -73,9 +73,9 @@ id  name    distance
 2   Boulder 38.5
 ```
 
-### `whereDistance` & `whereDistanceWithin`
+### `whereDistance`
 
-Include only results within a given radius in meters.
+Include results within a given radius in meters.
 
 Uses the `ST_Distance` & `ST_DWithin` function.
 
@@ -92,6 +92,22 @@ export function findNearbyLocations({lat, lon}) {
 }
 ```
 
+```sql
+select
+    "id",
+    "name"
+from
+    "locations"
+where
+    "distance" < 10000
+```
+
+```tsv
+id  name
+1   Denver
+2   Boulder
+```
+
 ## References
 
 - [PostGIS Reference](https://postgis.net/docs/ST_Distance.html)
@@ -101,6 +117,6 @@ export function findNearbyLocations({lat, lon}) {
 
 - [ ] Add tests
 - [ ] Add more methods
+  - [ ] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)
 - [ ] Add more docs
 - [ ] Add more examples
-- [ ] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)
