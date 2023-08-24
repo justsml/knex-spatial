@@ -6,6 +6,10 @@
 //   | MultiPolygonShape
 //   | MultiLineShape;
 
+type ShapeOrColumn = Shape | string;
+
+type Unit = 'meters' | 'miles';
+
 type Shape = (Point | Circle | Line | Polygon | MultiPolygon | MultiLine) & {
   srid?: number;
 };

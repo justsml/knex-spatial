@@ -1,5 +1,17 @@
+
 /**
- *
+ * Utility functions for working with PostGIS shapes & columns.
+ * @param shapeOrColumn 
+ * @returns 
+ */
+export function parseShapeOrColumnToSafeSql(
+  shapeOrColumn: ShapeOrColumn | undefined,
+): string | undefined {
+  if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
+  return convertShapeToSql(shapeOrColumn);
+}
+/**
+ * A helper for generating Well-known Text (WKT) for working with PostGIS shapes.
  */
 export function convertShapeToSql(s: Shape | undefined): string | undefined {
   if (!s) return undefined;
