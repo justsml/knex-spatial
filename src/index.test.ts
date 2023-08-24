@@ -79,7 +79,7 @@ describe('selectDistance', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1 AS \`distance\`
+      SELECT ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -270,8 +270,8 @@ describe('whereDistanceWithin', () => {
     const query = db
       .from('locations')
       .select('id', 'name')
-      .selectDistance('location', { lat: 39.87, lon: -104.128, radius: 100 })
-      .whereDistanceWithin('location', { lat: 39.87, lon: -104.128 }, 100)
+      .selectDistance('location', { lat: 39.87, lon: -104.128, radius: 100 }, 'distance', 'meters')
+      .whereDistanceWithin('location', { lat: 39.87, lon: -104.128 }, 100, 'meters')
       .orderBy('distance')
       .toSQL()
       .toNative();
@@ -283,7 +283,7 @@ describe('whereDistanceWithin', () => {
         ST_Distance(
           \`location\`,
           ST_Buffer('POINT(-104.128 39.87)'::geography, 100)
-        ) / 1609.34 AS \`distance\`
+        ) AS \`distance\`
       FROM \`locations\`
       WHERE ST_DWithin(
           \`location\`,
@@ -343,7 +343,7 @@ describe('whereDistanceWithin', () => {
     const query = db
       .from('locations')
       .select('id')
-      .whereDistanceWithin('a_location', 'a_point', 100)
+      .whereDistanceWithin('a_location', 'a_point', 100, 'meters')
       .orderBy('distance')
       .toSQL()
       .toNative();
@@ -377,16 +377,13 @@ describe('selectIntersection', () => {
       .selectIntersection('location', {
         lat: 39.87,
         lon: -104.128,
-        radius: 1_000,
       })
       .toSQL()
       .toNative();
 
-    expect(fmt(query.sql)).toBe(dedent`SELECT ST_Intersection(
-      \`location\`,
-      ST_Buffer('POINT(-104.128 39.87)'::geography, 1000)
-    ) AS \`intersection\`
-  FROM \`locations\``);
+    expect(fmt(query.sql)).toBe(dedent`
+    SELECT ST_Intersection(\`location\`, 'POINT(-104.128 39.87)'::geography) AS \`intersection\`
+    FROM \`locations\``);
   });
 
   it('should return intersection w/ shape & shape', () => {
@@ -427,6 +424,22 @@ describe('selectIntersection', () => {
 
     expect(fmt(query.sql)).toBe(dedent`SELECT \`id\`
   FROM \`locations\``);
+  });
+});
+
+describe('selectArea', () => {
+  it('should return area w/ column', () => {
+    const query = db
+      .from('locations')
+      .select('id')
+      .selectArea('location')
+      .toSQL()
+      .toNative();
+      
+    expect(fmt(query.sql)).toBe(dedent`
+    SELECT \`id\`,
+      ST_Area(\`location\`) AS \`area\`
+    FROM \`locations\``);
   });
 });
 

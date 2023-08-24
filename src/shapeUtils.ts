@@ -2,12 +2,12 @@
 /**
  * Utility functions for working with PostGIS shapes & columns.
  * @param shapeOrColumn 
- * @returns 
  */
 export function parseShapeOrColumnToSafeSql(
   shapeOrColumn: ShapeOrColumn | undefined,
 ): string | undefined {
-  if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
+  // if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
+  if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn + '`';
   return convertShapeToSql(shapeOrColumn);
 }
 /**

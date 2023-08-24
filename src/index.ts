@@ -2,13 +2,12 @@ import 'knex';
 import { Knex, knex } from 'knex';
 import {
   convertShapeToSql,
-  isCircle,
-  isValidGeography,
-  isValidGeometry,
   isValidShape,
-  isValidPoint,
   parseShapeOrColumnToSafeSql,
 } from './shapeUtils';
+
+// Re-export helpers
+export { convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
 
 let _db: Knex;
 let _options: PluginOptions;
@@ -25,8 +24,19 @@ export default function KnexSpatialPlugin(
   _options = options;
   try {
     knex.QueryBuilder.extend('selectDistance', selectDistance);
+    knex.QueryBuilder.extend('selectArea', selectArea);
     knex.QueryBuilder.extend('selectBuffer', selectBuffer);
     knex.QueryBuilder.extend('selectIntersection', selectIntersection);
+    knex.QueryBuilder.extend('selectLength', selectLength);
+    knex.QueryBuilder.extend('selectCentroid', selectCentroid);
+    knex.QueryBuilder.extend('selectEnvelope', selectEnvelope);
+    knex.QueryBuilder.extend('selectConvexHull', selectConvexHull);
+    knex.QueryBuilder.extend('selectDifference', selectDifference);
+    knex.QueryBuilder.extend('selectSymDifference', selectSymDifference);
+    knex.QueryBuilder.extend('selectUnion', selectUnion);
+    knex.QueryBuilder.extend('selectDistanceSpheroid', selectDistanceSpheroid);
+    knex.QueryBuilder.extend('selectDistanceSphere', selectDistanceSphere);
+
     knex.QueryBuilder.extend('whereDistanceWithin', whereDistanceWithin);
     knex.QueryBuilder.extend('whereDistance', whereDistance);
     knex.QueryBuilder.extend('whereWithin', whereWithin);
@@ -51,10 +61,10 @@ export default function KnexSpatialPlugin(
 
 /**
  * Create a function for 2-arg GIS Functions.
- * 
+ *
  * Examples include `ST_Distance`, `ST_Intersection`, `ST_DWithin`, etc.
- * 
- * ## Example 
+ *
+ * ## Example
  * ```ts
  * const selectDistance = selectBinaryFunctionColumnWrapper('ST_Distance', 'distance');
  * ```
@@ -76,13 +86,26 @@ const selectBinaryFunctionColumnWrapper = (
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
     const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
     if (!lhs || !rhs) return this;
-    const mathModifier = useUnits === 'miles' ? ' * 1609.34' : '';
-    return this.select(`${methodName}(${lhs}, ${rhs})${mathModifier} as ${columnAlias}`);
+    const mathModifier =
+      useUnits === 'miles'
+        ? ' * 1609.34'
+        : useUnits === 'kilometers'
+        ? ' * 1000'
+        : useUnits === 'hectares'
+        ? ' * 10000'
+        : useUnits === 'acres'
+        ? ' * 4046.86'
+        : '';
+    return this.select(
+      _db.raw(`${methodName}(${lhs}, ${rhs})${mathModifier} as ??`, [
+        columnAlias,
+      ]),
+    );
   };
 
 /**
  * Create a function for 1-arg GIS Functions.
- * 
+ *
  * Examples include `ST_Area`, `ST_Length`, `ST_Centroid`, etc.
  */
 const selectUnaryFunctionColumnWrapper = (
@@ -101,8 +124,19 @@ const selectUnaryFunctionColumnWrapper = (
     const lhs = parseShapeOrColumnToSafeSql(shapeOrColumn);
     if (!lhs) return this;
     const mathModifier =
-      useUnits === 'NA' ? '' : useUnits === 'miles' ? ' * 1609.34' : ' * 1';
-    return this.select(`${methodName}(${lhs})${mathModifier} as ${columnAlias}`);
+      useUnits === 'miles'
+        ? ' * 1609.34'
+        : useUnits === 'kilometers'
+        ? ' * 1000'
+        : useUnits === 'hectares'
+        ? ' * 10000'
+        : useUnits === 'acres'
+        ? ' * 4046.86'
+        : '';
+
+    return this.select(
+      _db.raw(`${methodName}(${lhs})${mathModifier} as ??`, [columnAlias]),
+    );
   };
 
 /**
@@ -171,13 +205,17 @@ function selectDistance<
   columnAlias = 'distance',
   useUnits: Unit = 'miles',
 ): Knex.QueryBuilder<TRecord, TResult> {
-  const divisionModifier = useUnits === 'miles' ? 1609.34 : 1;
+  const mathModifier = useUnits === 'miles' ? ' / 1609.34' : 
+    useUnits === 'hectares' ? ' / 10000' :
+    useUnits === 'kilometers' ? ' / 1000' :
+    useUnits === 'acres' ? ' / 4046.86' : '';
+
   const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
   const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
   if (!lhs || !rhs) return this;
 
   return this.select(
-    _db.raw(`ST_Distance(${lhs}, ${rhs}) / ${divisionModifier} AS ??`, [
+    _db.raw(`ST_Distance(${lhs}, ${rhs})${mathModifier} AS ??`, [
       columnAlias,
     ]),
   );
@@ -190,20 +228,69 @@ function whereDistanceWithin<
   this: Knex.QueryBuilder<TRecord, TResult>,
   leftShapeOrColumn: ShapeOrColumn,
   rightShapeOrColumn: ShapeOrColumn,
-  distanceMeters?: number,
+  distance?: number,
+  useUnits: Unit = 'miles',
 ) {
   const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
   const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
+  const mathModifier =
+    useUnits === 'miles'
+      ? ' / 1609.34'
+      : useUnits === 'hectares'
+      ? ' / 10000'
+      : useUnits === 'kilometers'
+      ? ' / 1000'
+      : useUnits === 'acres'
+      ? ' / 4046.86'
+      : '';
   if (!lhs || !rhs) return this;
 
-  if (!distanceMeters)
-    throw new Error('whereDistanceWithin: Missing distanceMeters');
+  if (!distance || Number.isNaN(distance))
+    throw new Error('whereDistanceWithin: Missing distance');
 
-  return this.whereRaw(`ST_DWithin(${lhs}, ${rhs}, ${Number(distanceMeters)})`);
+  return this.whereRaw(
+    `ST_DWithin(${lhs}, ${rhs}, ${Number(distance)}${mathModifier})`,
+  );
 }
 
-const whereDistance = whereConditionalWrapper('ST_Distance');
+const selectIntersection = selectBinaryFunctionColumnWrapper(
+  'ST_Intersection',
+  'intersection',
+);
+const selectArea = selectUnaryFunctionColumnWrapper('ST_Area', 'area');
+const selectLength = selectUnaryFunctionColumnWrapper('ST_Length', 'length');
+const selectCentroid = selectUnaryFunctionColumnWrapper(
+  'ST_Centroid',
+  'centroid',
+);
+const selectEnvelope = selectUnaryFunctionColumnWrapper(
+  'ST_Envelope',
+  'envelope',
+);
+const selectConvexHull = selectUnaryFunctionColumnWrapper(
+  'ST_ConvexHull',
+  'convexHull',
+);
+const selectDifference = selectBinaryFunctionColumnWrapper(
+  'ST_Difference',
+  'difference',
+);
+const selectSymDifference = selectBinaryFunctionColumnWrapper(
+  'ST_SymDifference',
+  'symDifference',
+);
+const selectUnion = selectBinaryFunctionColumnWrapper('ST_Union', 'union');
+// const selectBuffer = selectBinaryFunctionColumnWrapper('ST_Buffer', 'buffer');
+const selectDistanceSpheroid = selectBinaryFunctionColumnWrapper(
+  'ST_DistanceSpheroid',
+  'distanceSpheroid',
+);
+const selectDistanceSphere = selectBinaryFunctionColumnWrapper(
+  'ST_DistanceSphere',
+  'distanceSphere',
+);
 
+const whereDistance = whereConditionalWrapper('ST_Distance');
 const whereTouches = wherePredicateWrapper('ST_Touches');
 const whereWithin = wherePredicateWrapper('ST_Within');
 const whereContains = wherePredicateWrapper('ST_Contains');
@@ -259,35 +346,35 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   return this;
 }
 
-function selectIntersection<
-  TRecord extends {} = any,
-  TResult extends {} = unknown[],
->(
-  this: Knex.QueryBuilder<TRecord, TResult>,
-  columnOrShape: string | Shape,
-  inputShape?: Shape,
-  columnAlias = 'intersection',
-): Knex.QueryBuilder<TRecord, TResult> {
-  if (typeof columnOrShape === 'string' && isValidShape(inputShape)) {
-    return this.select(
-      _db.raw(`ST_Intersection(??, ${convertShapeToSql(inputShape)}) as ??`, [
-        columnOrShape,
-        columnAlias,
-      ]),
-    );
-  }
-  if (isValidShape(columnOrShape) && isValidShape(inputShape)) {
-    return this.select(
-      _db.raw(
-        `ST_Intersection(${convertShapeToSql(
-          columnOrShape,
-        )}, ${convertShapeToSql(inputShape)}) as ??`,
-        [columnAlias],
-      ),
-    );
-  }
-  return this;
-}
+// function selectIntersection<
+//   TRecord extends {} = any,
+//   TResult extends {} = unknown[],
+// >(
+//   this: Knex.QueryBuilder<TRecord, TResult>,
+//   columnOrShape: string | Shape,
+//   inputShape?: Shape,
+//   columnAlias = 'intersection',
+// ): Knex.QueryBuilder<TRecord, TResult> {
+//   if (typeof columnOrShape === 'string' && isValidShape(inputShape)) {
+//     return this.select(
+//       _db.raw(`ST_Intersection(??, ${convertShapeToSql(inputShape)}) as ??`, [
+//         columnOrShape,
+//         columnAlias,
+//       ]),
+//     );
+//   }
+//   if (isValidShape(columnOrShape) && isValidShape(inputShape)) {
+//     return this.select(
+//       _db.raw(
+//         `ST_Intersection(${convertShapeToSql(
+//           columnOrShape,
+//         )}, ${convertShapeToSql(inputShape)}) as ??`,
+//         [columnAlias],
+//       ),
+//     );
+//   }
+//   return this;
+// }
 
 declare module 'knex' {
   namespace Knex {
@@ -360,6 +447,17 @@ declare module 'knex' {
        * ST_Within - Returns TRUE if the geometry A is completely inside geometry B
        */
       whereWithin: typeof whereWithin;
+
+      selectArea: typeof selectArea;
+      selectLength: typeof selectLength;
+      selectCentroid: typeof selectCentroid;
+      selectEnvelope: typeof selectEnvelope;
+      selectConvexHull: typeof selectConvexHull;
+      selectDifference: typeof selectDifference;
+      selectSymDifference: typeof selectSymDifference;
+      selectUnion: typeof selectUnion;
+      selectDistanceSpheroid: typeof selectDistanceSpheroid;
+      selectDistanceSphere: typeof selectDistanceSphere;
 
       /**
        * selectBuffer - Returns a geometry that represents all points whose distance from this Geometry is less than or equal to distance.
