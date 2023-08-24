@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   isValidGeography,
   convertShapeToSql,
-  convertToSimpleShape,
+  // convertToSimpleShape,
   isPoint,
   isPolygon,
   isLine,
   isMultiPolygon,
   isMultiLine,
   isCircle,
-  isCoordinatesDefined,
+  isValidGeometry,
 } from './shapeUtils';
 
 /* Geography-based fixtures */
@@ -111,21 +111,14 @@ describe('handles invalid input', () => {
     } })).toEqual(undefined);
   });
   it('should detect undefined values', () => {
-    // @ts-expect-error
-    expect(isCoordinatesDefined(undefined)).toEqual(false);
-    // @ts-expect-error
-    expect(isCoordinatesDefined({ lat: undefined, lon: 1 })).toEqual(false);
-    // @ts-expect-error
-    expect(isCoordinatesDefined({ lat: 1, lon: undefined })).toEqual(false);
-    expect(isCoordinatesDefined({ lat: 1, lon: 1 })).toEqual(true);
-    // @ts-expect-error
-    expect(isCoordinatesDefined({ y: undefined, x: 1 })).toEqual(false);
-    // @ts-expect-error
-    expect(isCoordinatesDefined({ y: 1, x: undefined })).toEqual(false);
-    // @ts-expect-error
-    expect(isCoordinatesDefined([{ lat: undefined, lon: 1 }])).toEqual(false);
-    // @ts-expect-error
-    expect(isCoordinatesDefined([[{ lat: 1, lon: undefined }]])).toEqual(false);
+    expect(isValidGeometry(undefined)).toEqual(false);
+    expect(isValidGeometry({ lat: undefined, lon: 1 })).toEqual(false);
+    expect(isValidGeometry({ lat: 1, lon: undefined })).toEqual(false);
+    expect(isValidGeometry({ lat: 1, lon: 1 })).toEqual(false);
+    expect(isValidGeometry({ y: undefined, x: 1 })).toEqual(false);
+    expect(isValidGeometry({ y: 1, x: undefined })).toEqual(false);
+    expect(isValidGeometry([{ lat: undefined, lon: 1 }])).toEqual(false);
+    expect(isValidGeometry([[{ lat: 1, lon: undefined }]])).toEqual(false);
     
   });
 });
@@ -136,68 +129,61 @@ describe('convertShapeToSqlWKT', () => {
   it('should convert a geography point', () => {
     const point = geoPoint();
     const expected = `'POINT(-1 1)'::geography`;
-    expect(convertShapeToSql({ point })).toEqual(expected);
     expect(convertShapeToSql(point)).toEqual(expected);
   });
   it('should convert a geometry point', () => {
     const point = geometryPoint();
     const expected = `'POINT(-1 1)'::geometry`;
-    expect(convertShapeToSql({ point })).toEqual(expected);
     expect(convertShapeToSql(point)).toEqual(expected);
   });
 
   it('should convert a geography line', () => {
     const line = geoLine();
     const expected = `'LINESTRING(-1 1, -2 2, -3 3)'::geography`;
-    expect(convertShapeToSql({ line })).toEqual(expected);
     expect(convertShapeToSql(line)).toEqual(expected);
   });
   it('should convert a geometry line', () => {
     const line = geometryLine();
-    expect(convertShapeToSql({ line })).toEqual(
+    expect(convertShapeToSql(line)).toEqual(
       `'LINESTRING(-1 1, -2 2, -3 3)'::geometry`,
     );
   });
   it('should convert a geography polygon', () => {
     const polygon = geoPolygon();
-    expect(convertShapeToSql({ polygon })).toEqual(
+    expect(convertShapeToSql(polygon)).toEqual(
       `'POLYGON(-1 1, -2 2, -3 3, -1 1)'::geography`,
     );
   });
   it('should convert a geometry polygon', () => {
     const polygon = geometryPolygon();
     const expected = `'POLYGON(-1 1, -2 2, -3 3, -1 1)'::geometry`;
-    expect(convertShapeToSql({ polygon })).toEqual(expected);
     expect(convertShapeToSql(polygon)).toEqual(expected);
   });
   it('should convert a geography multiPolygon', () => {
     const multiPolygon = geoMultiPolygon();
     const expected = `'MULTIPOLYGON((-1 1, -2 2, -3 3, -1 1), (-1 1, -2 2, -3 3, -1 1))'::geography`;
-    expect(convertShapeToSql({ multiPolygon })).toEqual(expected);
     expect(convertShapeToSql(multiPolygon)).toEqual(expected);
   });
   it('should convert a geometry multiPolygon', () => {
     const multiPolygon = geometryMultiPolygon();
-    expect(convertShapeToSql({ multiPolygon })).toEqual(
+    expect(convertShapeToSql(multiPolygon)).toEqual(
       `'MULTIPOLYGON((-1 1, -2 2, -3 3, -1 1), (-1 1, -2 2, -3 3, -1 1))'::geometry`,
     );
   });
   it('should convert a geography multiLine', () => {
     const multiLine = geoMultiLine();
     const expected = `'MULTILINESTRING((-1 1, -2 2), (-3 3, -4 4))'::geography`;
-    expect(convertShapeToSql({ multiLine })).toEqual(expected);
     expect(convertShapeToSql(multiLine)).toEqual(expected);
   });
   it('should convert a geometry multiLine', () => {
     const multiLine = geometryMultiLine();
-    expect(convertShapeToSql({ multiLine })).toEqual(
+    expect(convertShapeToSql(multiLine)).toEqual(
       `'MULTILINESTRING((-1 1, -2 2), (-3 3, -4 4))'::geometry`,
     );
   });
   it('should convert a circle into a point+buffer', () => {
     const circle = { lat: 1, lon: -1, radius: 100 };
     const expected = `ST_Buffer('POINT(-1 1)'::geography, 100)`;
-    expect(convertShapeToSql({ circle })).toEqual(expected);
     expect(convertShapeToSql(circle)).toEqual(expected);
   });
 });
@@ -227,28 +213,28 @@ describe('containsGeography', () => {
   });
 });
 
-describe('convertToSimpleShape', () => {
-  it('should convert a point', () => {
-    const point = geoPoint();
-    expect(convertToSimpleShape({ point })).toEqual(point);
-  });
-  it('should convert a line', () => {
-    const line = geoLine();
-    expect(convertToSimpleShape({ line })).toEqual(line);
-  });
-  it('should convert a polygon', () => {
-    const polygon = geoPolygon();
-    expect(convertToSimpleShape({ polygon })).toEqual(polygon);
-  });
-  it('should convert a multiPolygon', () => {
-    const multiPolygon = geoMultiPolygon();
-    expect(convertToSimpleShape({ multiPolygon })).toEqual(multiPolygon);
-  });
-  it('should convert a multiLine', () => {
-    const multiLine = geoMultiLine();
-    expect(convertToSimpleShape({ multiLine })).toEqual(multiLine);
-  });
-});
+// describe('convertToSimpleShape', () => {
+//   it('should convert a point', () => {
+//     const point = geoPoint();
+//     expect(convertToSimpleShape({ point })).toEqual(point);
+//   });
+//   it('should convert a line', () => {
+//     const line = geoLine();
+//     expect(convertToSimpleShape({ line })).toEqual(line);
+//   });
+//   it('should convert a polygon', () => {
+//     const polygon = geoPolygon();
+//     expect(convertToSimpleShape({ polygon })).toEqual(polygon);
+//   });
+//   it('should convert a multiPolygon', () => {
+//     const multiPolygon = geoMultiPolygon();
+//     expect(convertToSimpleShape({ multiPolygon })).toEqual(multiPolygon);
+//   });
+//   it('should convert a multiLine', () => {
+//     const multiLine = geoMultiLine();
+//     expect(convertToSimpleShape({ multiLine })).toEqual(multiLine);
+//   });
+// });
 
 describe('type guard tests', () => {
   it('is a point', () => {

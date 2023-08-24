@@ -1,106 +1,118 @@
 /**
  *
  */
-export function convertShapeToSql(
-  s: ExplicitShape | ShapeSimple | undefined,
-): string | undefined {
+export function convertShapeToSql(s: Shape | undefined): string | undefined {
   if (!s) return undefined;
-  let shape = !isExplicitShape(s) ? convertToExplicitShape(s) : s;
-  if (!shape) return undefined;
-  let simple = convertToSimpleShape(shape);
-  if (!simple) return undefined;
-  const isGeo = isValidGeography(simple);
-  const castType = isGeo ? 'geography' : 'geometry';
+  // let shape = !isExplicitShape(s) ? convertToExplicitShape(s) : s;
+  // if (!shape) return undefined;
+  // let s = convertToShape(shape);
+  // if (!s) return undefined;
+  const isGeography = isValidGeography(s);
+  const castType = isGeography ? 'geography' : 'geometry';
 
-  if (isCircle(simple)) {
-    const c = simple;
+  if (isCircle(s)) {
+    const c = s;
     return `ST_Buffer('POINT(${getX(c)} ${getY(c)})'::${castType}, ${
       c.radius
     })`;
   }
 
-  if (isPoint(simple))
-    return `'POINT(${getX(simple)} ${getY(simple)})'::${castType}`;
+  if (isPoint(s)) return `'POINT(${getX(s)} ${getY(s)})'::${castType}`;
 
-  if (isMultiPolygon(simple))
-    return `'MULTIPOLYGON(${simple
+  if (isMultiPolygon(s))
+    return `'MULTIPOLYGON(${s
       .map((p) => `(${p.map((p) => `${getX(p)} ${getY(p)}`).join(', ')})`)
       .join(', ')})'::${castType}`;
-  if (isPolygon(simple))
-    return `'POLYGON(${simple
+  if (isPolygon(s))
+    return `'POLYGON(${s
       .map((p) => `${getX(p)} ${getY(p)}`)
       .join(', ')})'::${castType}`;
-  if (isMultiLine(simple))
-    return `'MULTILINESTRING(${simple
+  if (isMultiLine(s))
+    return `'MULTILINESTRING(${s
       // @ts-expect-error
       .map((p) => `(${p.map((p) => `${getX(p)} ${getY(p)}`).join(', ')})`)
       .join(', ')})'::${castType}`;
-  if (isLine(simple))
-    return `'LINESTRING(${simple
+  if (isLine(s))
+    return `'LINESTRING(${s
       // @ts-expect-error
       .map((p) => `${getX(p)} ${getY(p)}`)
       .join(', ')})'::${castType}`;
 }
 
-export const isValidGeography = (p: ShapeSimple): boolean =>
+export const isValidShape = (p: unknown): boolean =>
+  isValidGeometry(p) || isValidGeography(p);
+export const isValidGeography = (p: unknown): boolean =>
   Array.isArray(p)
-    ? (p as any[]).every((x: PointSimple | PointSimple[]) =>
-        Array.isArray(x) ? isValidGeography(x) : isValidLatLon(x),
+    ? (p as any[]).every((inner: Point | Point[]) =>
+        Array.isArray(inner)
+          ? inner.every(isValidLatLon)
+          : isValidLatLon(inner),
       )
     : isValidLatLon(p);
 
-export const isCoordinatesDefined = (p: ShapeSimple): boolean =>
+export const isValidGeometry = (p: unknown): boolean =>
   p == null
     ? false
     : Array.isArray(p)
-    ? (p as any[]).every((x: PointSimple | PointSimple[]) =>
-        Array.isArray(x) ? isValidGeography(x) : isValidCoordinates(x),
+    ? (p as any[]).every((inner: Point | Point[]) =>
+        Array.isArray(inner) ? inner.every(isValidXY) : isValidXY(inner),
       )
-    : isValidCoordinates(p);
+    : isValidXY(p);
 
-const isValidLatLon = (p: ShapeSimple) =>
-  'lat' in p && 'lon' in p && p.lat !== undefined && p.lon !== undefined;
-const isValidXY = (p: ShapeSimple) =>
-  'x' in p && 'y' in p && p.x !== undefined && p.y !== undefined;
-const isValidCoordinates = (p: ShapeSimple) => isValidLatLon(p) || isValidXY(p);
+const isValidLatLon = (p: unknown) =>
+  p != null &&
+  typeof p === 'object' &&
+  'lat' in p &&
+  'lon' in p &&
+  p.lat !== undefined &&
+  p.lon !== undefined;
+const isValidXY = (p: unknown) =>
+  p != null &&
+  typeof p === 'object' &&
+  'x' in p &&
+  'y' in p &&
+  p.x !== undefined &&
+  p.y !== undefined;
 
-const isExplicitShape = (shape: any): shape is ExplicitShape =>
-  shape != null &&
-  ['point', 'circle', 'line', 'polygon', 'multiPolygon', 'multiLine'].some(
-    (key) => key in shape,
-  );
+// const isValidCoordinates = (p: Shape) => isValidLatLon(p) || isValidXY(p);
 
-export function convertToSimpleShape(
-  shape: ExplicitShape,
-): ShapeSimple | undefined {
-  if ('point' in shape && isPoint(shape.point)) return shape.point;
-  if ('circle' in shape && isCircle(shape.circle)) return shape.circle;
-  if ('line' in shape && isLine(shape.line)) return shape.line;
-  if ('polygon' in shape && isPolygon(shape.polygon)) return shape.polygon;
-  if ('multiPolygon' in shape && isMultiPolygon(shape.multiPolygon))
-    return shape.multiPolygon;
-  if ('multiLine' in shape && isMultiLine(shape.multiLine))
-    return shape.multiLine;
-  // if ('multiPoint' in shape && isMultiLine(shape.multiPoint)) return shape.multiPoint;
-}
-export function convertToExplicitShape(
-  shape: ShapeSimple,
-): ExplicitShape | undefined {
-  if (isCircle(shape)) return { circle: shape };
-  if (isPoint(shape)) return { point: shape };
-  if (isLine(shape)) return { line: shape };
-  if (isPolygon(shape)) return { polygon: shape };
-  if (isMultiPolygon(shape)) return { multiPolygon: shape };
-  if (isMultiLine(shape)) return { multiLine: shape };
-  // if ('multiPoint' in shape && isMultiLine(shape.multiPoint)) return shape.multiPoint;
-}
+// const isExplicitShape = (shape: any): shape is ExplicitShape =>
+//   shape != null &&
+//   ['point', 'circle', 'line', 'polygon', 'multiPolygon', 'multiLine'].some(
+//     (key) => key in shape,
+//   );
 
-const getX = (p: PointSimple) => ('x' in p ? p.x : p.lon);
-const getY = (p: PointSimple) => ('y' in p ? p.y : p.lat);
+// export function convertToShape(
+//   shape: ExplicitShape,
+// ): Shape | undefined {
+//   if ('point' in shape && isPoint(shape.point)) return shape.point;
+//   if ('circle' in shape && isCircle(shape.circle)) return shape.circle;
+//   if ('line' in shape && isLine(shape.line)) return shape.line;
+//   if ('polygon' in shape && isPolygon(shape.polygon)) return shape.polygon;
+//   if ('multiPolygon' in shape && isMultiPolygon(shape.multiPolygon))
+//     return shape.multiPolygon;
+//   if ('multiLine' in shape && isMultiLine(shape.multiLine))
+//     return shape.multiLine;
+//   // if ('multiPoint' in shape && isMultiLine(shape.multiPoint)) return shape.multiPoint;
+// }
+// export function convertToExplicitShape(
+//   shape: Shape,
+// ): ExplicitShape | undefined {
+//   if (isCircle(shape)) return { circle: shape };
+//   if (isPoint(shape)) return { point: shape };
+//   if (isLine(shape)) return { line: shape };
+//   if (isPolygon(shape)) return { polygon: shape };
+//   if (isMultiPolygon(shape)) return { multiPolygon: shape };
+//   if (isMultiLine(shape)) return { multiLine: shape };
+//   // if ('multiPoint' in shape && isMultiLine(shape.multiPoint)) return shape.multiPoint;
+// }
+
+const getX = (p: Point) => ('x' in p ? p.x : p.lon);
+const getY = (p: Point) => ('y' in p ? p.y : p.lat);
 /**
  * **Note:** Shorthand arrays of Points may look like either Lines or Polygons.
  * The system detects a Polygon when Points[] have the same start and end coordinates. */
-function isPointListPolygon(points: PointSimple[]): boolean | undefined {
+function isClosedLine(points: Point[]): boolean | undefined {
   if (points.length === 0) return undefined; // Undefined, do not apply
   if (points.length === 1) return false; // Nope, a 1 Point array
   if (points.length === 2) return false; // A 2 Point LineString
@@ -115,14 +127,14 @@ function isPointListPolygon(points: PointSimple[]): boolean | undefined {
   return firstX === lastX && firstY === lastY;
 }
 /** Point Type Guard */
-export const isPoint = (s: unknown): s is PointSimple =>
+export const isPoint = (s: unknown): s is Point =>
   s instanceof Object &&
   (!('radius' in s) || s.radius === undefined) &&
   (('lat' in s && 'lon' in s && s.lat !== undefined && s.lon !== undefined) ||
     ('x' in s && 'y' in s && s.x !== undefined && s.y !== undefined));
 
 /** Circle Type Guard */
-export const isCircle = (s: unknown): s is CircleSimple =>
+export const isCircle = (s: unknown): s is Circle =>
   s instanceof Object &&
   (('lat' in s &&
     'lon' in s &&
@@ -137,20 +149,20 @@ export const isCircle = (s: unknown): s is CircleSimple =>
   s.radius !== undefined;
 
 /** Polygon Type Guard */
-export const isPolygon = (s: unknown): s is PolygonSimple =>
-  Array.isArray(s) && s.every(isPoint) && isPointListPolygon(s) === true;
+export const isPolygon = (s: unknown): s is Polygon =>
+  Array.isArray(s) && s.every(isPoint) && isClosedLine(s) === true;
 
 /** Line Type Guard */
-export const isLine = (s: unknown): s is LineSimple =>
+export const isLine = (s: unknown): s is Line =>
   Array.isArray(s) &&
   s.every(isPoint) &&
-  isPointListPolygon(s) === false &&
+  isClosedLine(s) === false &&
   s.length >= 2;
 
 /** MultiLine Type Guard */
-export const isMultiLine = (s: unknown): s is MultiLineSimple =>
+export const isMultiLine = (s: unknown): s is MultiLine =>
   Array.isArray(s) && s.every(isLine);
 
 /** MultiPolygon Type Guard */
-export const isMultiPolygon = (s: unknown): s is MultiPolygonSimple =>
+export const isMultiPolygon = (s: unknown): s is MultiPolygon =>
   Array.isArray(s) && s.every(isPolygon);

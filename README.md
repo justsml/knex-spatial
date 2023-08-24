@@ -8,7 +8,7 @@ A Knex plugin for easy operations on geometric & geospatial data in Postgres.
 
 A fluent, expressive and natural API design.
 
-- Auto-complete-friendly builder for common geometry & geography shapes.
+- [Auto-complete-friendly builder for common geometry & geography shapes.](#expressive-shape-api)
 - `select*` and `where*` prefixed methods simplify common operations.
 
 ## Get Started
@@ -92,6 +92,29 @@ export function findNearbyLocations({lat, lon}) {
 }
 ```
 
+## Expressive Shape API
+
+It's easy to define shapes using plain JS objects using `Knex Spatial` helper method `convertShapeToSql`
+
+### Geography Shapes
+
+- `POINT`: `{ lat: number, lon: number }`
+- `CIRCLE`: `{ lat: number, lon: number, radius: number }`
+- `LINE`: `[{ lat: number, lon: number }, ...]` (2+ points, cannot begin & end with the same point)
+- `POLYGON`: `[{ lat: number, lon: number }, ...]` (first & last point must be the same)
+- `MULTIPOLYGON`: `[ [{ lat: number, lon: number }, ...], ...]` (array of polygons)
+- `MULTILINE`: `[ [{ lat: number, lon: number }, ...], ...]` (array of lines)
+
+### Geometry Shapes
+
+- `POINT`: `{ x: number, y: number }`
+- `CIRCLE`: `{ x: number, y: number, radius: number }`
+- `LINE`: `[{ x: number, y: number }, ...]` (2+ points, cannot begin & end with the same point)
+- `POLYGON`: `[{ x: number, y: number }, ...]` (first & last point must be the same)
+- `MULTIPOLYGON`: `[ [{ x: number, y: number }, ...], ...]` (array of polygons)
+- `MULTILINE`: `[ [{ x: number, y: number }, ...], ...]` (array of lines)
+
+
 ## References
 
 - [PostGIS Reference](https://postgis.net/docs/ST_Distance.html)
@@ -100,7 +123,8 @@ export function findNearbyLocations({lat, lon}) {
 ## TODO
 
 - [ ] Add tests
+- [ ] Add Schema Builder methods
 - [ ] Add more methods
 - [ ] Add more docs
 - [ ] Add more examples
-- [ ] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)
+- [x] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)

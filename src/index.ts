@@ -1,6 +1,33 @@
-import "knex";
-import { Knex, knex } from "knex";
-import { convertShapeToSql, isCoordinatesDefined } from "./shapeUtils";
+import 'knex';
+import { Knex, knex } from 'knex';
+import {
+  convertShapeToSql,
+  isCircle,
+  isValidGeography,
+  isValidGeometry,
+  isValidShape,
+} from './shapeUtils';
+
+let _db: Knex;
+
+export default function KnexSpatialPlugin(db: Knex) {
+  _db = db;
+  try {
+    knex.QueryBuilder.extend('selectDistance', selectDistance);
+    knex.QueryBuilder.extend('selectBuffer', selectBuffer);
+    knex.QueryBuilder.extend('selectIntersection', selectIntersection);
+    knex.QueryBuilder.extend('whereDistanceWithin', whereDistanceWithin);
+    knex.QueryBuilder.extend('whereDistance', whereDistance);
+    knex.QueryBuilder.extend('whereWithin', whereWithin);
+    knex.QueryBuilder.extend('whereTouches', whereTouches);
+  } catch (error) {
+    /* c8 ignore next 3 */
+    if (error.message.includes(`Can't extend`)) return db;
+    throw error;
+  }
+  return db;
+}
+
 /**
  * # Knex Geospatial Plugin
  *
@@ -62,52 +89,156 @@ import { convertShapeToSql, isCoordinatesDefined } from "./shapeUtils";
  * - [PostGIS Reference](https://postgis.net/docs/ST_Distance.html)
  * - [Knex Query Builder](https://knexjs.org/#Builder)
  */
-export default function KnexSpatialPlugin(db: Knex, defaultSRID = 4326) {
-  try {
-    knex.QueryBuilder.extend(
-      "selectDistance",
-      function selectDistance(
-        geoColumnName: string,
-        inputShape: ShapeSimple,
-        columnAlias = "distance"
-      ) {
-
-        return !isCoordinatesDefined(inputShape)
-          ? this
-          : this.select(
-              db.raw(`ST_Distance(??, ${convertShapeToSql(inputShape)}) / 1609.34 AS ??`, [
-                geoColumnName,
-                columnAlias,
-              ])
-            );
-      }
-    );
-
-    knex.QueryBuilder.extend(
-      "whereDistanceWithin",
-      function whereDistanceWithin(
-        geoColumnName: string,
-        inputShape: ShapeSimple,
-        radius: number
-      ) {
-        
-        return !isCoordinatesDefined(inputShape)
-          ? this
-          : this.whereRaw(`ST_DWithin(??, ${convertShapeToSql(inputShape)}, ?)`, [
-              geoColumnName,
-              radius,
-            ]);
-      }
-    );
-  } catch (error) {
-    /* c8 ignore next 3 */
-    if (error.message.includes("Can't extend")) return db;
-    throw error;
-  }
-  return db;
+function selectDistance<
+  TRecord extends {} = any,
+  TResult extends {} = unknown[],
+>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  geoColumnName: string,
+  inputShape: Shape,
+  columnAlias = 'distance',
+): Knex.QueryBuilder<TRecord, TResult> {
+  return !isValidShape(inputShape)
+    ? this
+    : this.select(
+        _db.raw(
+          `ST_Distance(??, ${convertShapeToSql(inputShape)}) / 1609.34 AS ??`,
+          [geoColumnName, columnAlias],
+        ),
+      );
 }
 
-declare module "knex" {
+function whereDistanceWithin<
+  TRecord extends {} = any,
+  TResult extends {} = unknown[],
+>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  geoColumnName: string,
+  inputShape: Shape,
+  distanceMeters?: number,
+) {
+  if (!isCircle(inputShape) || !isValidGeography(inputShape)) return this;
+
+  let distance = isCircle(inputShape) ? inputShape?.radius : distanceMeters;
+
+  return this.whereRaw(`ST_DWithin(??, ${convertShapeToSql(inputShape)}, ?)`, [
+    geoColumnName,
+    distance,
+  ]);
+}
+
+/** Sql Operator Map */
+const Operators = {
+  '=': '=',
+  '!=': '<>',
+  '>': '>',
+  '>=': '>=',
+  '<': '<',
+  '<=': '<=',
+  '<>': '<>',
+  '!==': '<>',
+  '==': '=',
+  '===': '=',
+};
+function whereDistance<
+  TRecord extends {} = any,
+  TResult extends {} = unknown[],
+>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  geoColumnName: string,
+  inputShape: Shape,
+  operator: keyof typeof Operators,
+  distance: number,
+) {
+  if (!isValidGeometry(inputShape) || !isValidGeography(inputShape))
+    return this;
+  if (!Operators[operator]) throw new Error(`Invalid operator: ${operator}`);
+
+  return this.whereRaw(
+    `ST_Distance(??, ${convertShapeToSql(inputShape)}) ?? ?`,
+    [geoColumnName, operator, distance],
+  );
+}
+
+function whereWithin<TRecord extends {} = any, TResult extends {} = unknown[]>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  geoColumnName: string,
+  inputShape: Shape,
+) {
+  if (!isValidGeometry(inputShape) || !isValidGeography(inputShape))
+    return this;
+
+  return this.whereRaw(`ST_Within(??, ${convertShapeToSql(inputShape)})`, [
+    geoColumnName,
+  ]);
+}
+
+function whereTouches<TRecord extends {} = any, TResult extends {} = unknown[]>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  geoColumnName: string,
+  inputShape: Shape,
+) {
+  if (!isValidGeometry(inputShape) || !isValidGeography(inputShape))
+    return this;
+
+  return this.whereRaw(`ST_Touches(??, ${convertShapeToSql(inputShape)})`, [
+    geoColumnName,
+  ]);
+}
+
+function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  columnOrShape: string | Shape,
+  distance: number,
+  columnAlias = 'buffer',
+): Knex.QueryBuilder<TRecord, TResult> {
+  if (typeof columnOrShape === 'string') {
+    return this.select(
+      _db.raw(`ST_Buffer(??, ?) as ??`, [columnOrShape, distance, columnAlias]),
+    );
+  }
+  console.log('selectBuffer', columnOrShape, distance, columnAlias);
+  if (isValidGeometry(columnOrShape) || isValidGeography(columnOrShape)) {
+    return this.select(
+      _db.raw(`ST_Buffer(${convertShapeToSql(columnOrShape)}, ${Number(distance)}) as ??`, [
+        columnAlias,
+      ]),
+    );
+  }
+  return this;
+}
+
+function selectIntersection<
+  TRecord extends {} = any,
+  TResult extends {} = unknown[],
+>(
+  this: Knex.QueryBuilder<TRecord, TResult>,
+  columnOrShape: string | Shape,
+  inputShape?: Shape,
+  columnAlias = 'intersection',
+): Knex.QueryBuilder<TRecord, TResult> {
+  if (typeof columnOrShape === 'string') {
+    return this.select(
+      _db.raw(`ST_Intersection(??, ${convertShapeToSql(inputShape)}) as ??`, [
+        columnOrShape,
+        columnAlias,
+      ]),
+    );
+  }
+  if (isValidShape(columnOrShape) && isValidShape(inputShape)) {
+    return this.select(
+      _db.raw(
+        `ST_Intersection(${convertShapeToSql(
+          columnOrShape,
+        )}, ${convertShapeToSql(inputShape)}) as ??`,
+        [columnAlias],
+      ),
+    );
+  }
+  return this;
+}
+
+declare module 'knex' {
   namespace Knex {
     export interface QueryInterface<TRecord extends {} = any, TResult = any> {
       /**
@@ -117,11 +248,12 @@ declare module "knex" {
        *
        * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
        */
-      selectDistance(
-        geoColumnName: string,
-        inputShape: ShapeSimple,
-        columnAlias?: string
-      ): QueryBuilder<TRecord, TResult>;
+      selectDistance: typeof selectDistance;
+      // (
+      //   geoColumnName: string,
+      //   inputShape: Shape,
+      //   columnAlias?: string
+      // ): QueryBuilder<TRecord, TResult>;
 
       /**
        * Spatial: Filters results outside a given radius in meters.
@@ -130,11 +262,7 @@ declare module "knex" {
        *
        * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
        */
-      whereDistanceWithin(
-        geoColumnName: string,
-        inputShape: ShapeSimple,
-        radius: number
-      ): QueryBuilder<TRecord, TResult>;
+      whereDistanceWithin: typeof whereDistanceWithin;
 
       /**
        * Spatial: Filters results outside a given distance in meters.
@@ -143,10 +271,7 @@ declare module "knex" {
        *
        * Note: Intelligently handles `undefined` lat & lon values by returning the query without modification.
        */
-      whereDistance(
-        geoColumnName: string,
-        latLonOpts: ExplicitShape
-      ): QueryBuilder<TRecord, TResult>;
+      whereDistance: typeof whereDistance;
 
       /**
        * ST_Equals - Returns TRUE if the given column Geometries are "spatially equal".
@@ -154,7 +279,7 @@ declare module "knex" {
        */
       whereEquals(
         geoColumnName: string,
-        opts: ExplicitShape
+        opts: Shape,
       ): QueryBuilder<TRecord, TResult>;
 
       /**
@@ -164,32 +289,30 @@ declare module "knex" {
        * @param geoColumnName
        * @param opts
        * @returns
-        */
+       */
       whereDisjoint(
         geoColumnName: string,
-        opts: ExplicitShape
+        opts: Shape,
       ): QueryBuilder<TRecord, TResult>;
 
       /**
-       * ST_Touches - Returns TRUE if the given Geometries "spatially touch". 
+       * ST_Touches - Returns TRUE if the given Geometries "spatially touch".
        * (i.e. share a common boundary point, but no interior points).
-       * 
+       *
        */
-      whereTouches(
-        geoColumnName: string,
-        opts: ExplicitShape
-      ): QueryBuilder<TRecord, TResult>;
+      whereTouches: typeof whereTouches;
 
       /**
        * ST_Within - Returns TRUE if the geometry A is completely inside geometry B
-       * 
        */
-      whereWithin(
-        geoColumnName: string,
-        opts: ExplicitShape
-      ): QueryBuilder<TRecord, TResult>;
+      whereWithin: typeof whereWithin;
 
-        
+      /**
+       * selectBuffer - Returns a geometry that represents all points whose distance from this Geometry is less than or equal to distance.
+       */
+      selectBuffer: typeof selectBuffer;
+
+      selectIntersection: typeof selectIntersection;
     }
   }
 }

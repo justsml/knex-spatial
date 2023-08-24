@@ -58,7 +58,6 @@ describe('whereDistance', () => {
       .whereDistanceWithin(
         'location',
         { lat: 39.87, lon: -104.128, radius: 100 },
-        100,
       )
       .orderBy('distance')
       .toSQL()
@@ -76,8 +75,7 @@ describe('whereDistance', () => {
       .whereDistanceWithin(
         'location',
         // @ts-expect-error
-        { lat: undefined, lon: -104.128, radius: 100 },
-        100,
+        { lat: undefined, lon: -104.128, radius: 100 }
       )
       .orderBy('distance')
       .toSQL()
@@ -85,6 +83,35 @@ describe('whereDistance', () => {
 
     expect(query.sql).toBe(
       "select `id`, `name` from `locations` order by `distance` asc",
+    );
+  });
+});
+
+describe('selectIntersection', () => {
+  it('should return intersection', () => {
+    const query = db
+      .from('locations')
+      .selectIntersection('location', { lat: 39.87, lon: -104.128, radius: 1_000 })
+      .toSQL()
+      .toNative();
+
+    expect(query.sql).toBe(
+      "select ST_Intersection(`location`, ST_Buffer('POINT(-104.128 39.87)'::geography, 1000)) as `intersection` from `locations`",
+    );
+  });
+});
+
+// selectBuffer
+describe('selectBuffer', () => {
+  it('should return buffer', () => {
+    const query = db
+      .from('locations')
+      .selectBuffer({ lat: 39.87, lon: -104.128 }, 1_000)
+      .toSQL()
+      .toNative();
+
+    expect(query.sql).toBe(
+      "select ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) as `buffer` from `locations`",
     );
   });
 });

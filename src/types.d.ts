@@ -1,20 +1,16 @@
-type ExplicitShape =
-  | PointShape
-  | CircleShape
-  | LineShape
-  | PolygonShape
-  | MultiPolygonShape
-  | MultiLineShape;
+// type ExplicitShape =
+//   | PointShape
+//   | CircleShape
+//   | LineShape
+//   | PolygonShape
+//   | MultiPolygonShape
+//   | MultiLineShape;
 
-type ShapeSimple =
-  | PointSimple
-  | CircleSimple
-  | LineSimple
-  | PolygonSimple
-  | MultiPolygonSimple
-  | MultiLineSimple;
+type Shape = (Point | Circle | Line | Polygon | MultiPolygon | MultiLine) & {
+  srid?: number;
+};
 
-type PointSimple =
+type Point =
   | {
       lat: number;
       lon: number;
@@ -24,7 +20,7 @@ type PointSimple =
       y: number;
       z?: number;
     };
-type CircleSimple =
+type Circle =
   | {
       lat: number;
       lon: number;
@@ -35,35 +31,34 @@ type CircleSimple =
       y: number;
       radius: number;
     };
-/** While LineSimple and PolygonSimple are typed the same, the system handles
+/** While Line and Polygon are typed the same, the system handles
  * shorthand expressions due to polygons having the same start and end coordinates. */
-type LineSimple = Array<PointSimple>;
-/** While LineSimple and PolygonSimple are typed the same, the system handles
+type Line = Point[];
+/** While Line and Polygon are typed the same, the system handles
  * shorthand expressions due to polygons having the same start and end coordinates. */
-type PolygonSimple = Array<PointSimple>;
-type MultiPolygonSimple = Array<PolygonSimple>;
-type MultiLineSimple = Array<LineSimple>;
+type Polygon = Point[];
+type MultiPolygon = Point[][];
+type MultiLine = Point[][];
 
-
-type PointShape = {
-  point: PointSimple;
-};
-type CircleShape = {
-  circle: CircleSimple;
-};
-type LineShape = {
-  line: LineSimple;
-};
-type PolygonShape = {
-  polygon: PolygonSimple;
-};
-type MultiPolygonShape = {
-  multiPolygon: MultiPolygonSimple;
-};
-type MultiLineShape = {
-  multiLine: MultiLineSimple;
-};
-/** Note: Currently no 'simple' multi point support. (Indistinguishable from Polygon & LineString.) */
-type MultiPointShape = {
-  multiPoint: PointSimple[];
-}
+// type PointShape = {
+//   point: Point;
+// };
+// type CircleShape = {
+//   circle: Circle;
+// };
+// type LineShape = {
+//   line: Line;
+// };
+// type PolygonShape = {
+//   polygon: Polygon;
+// };
+// type MultiPolygonShape = {
+//   multiPolygon: MultiPolygon;
+// };
+// type MultiLineShape = {
+//   multiLine: MultiLine;
+// };
+// /** Note: Currently no '' multi point support. (Indistinguishable from Polygon & LineString.) */
+// type MultiPointShape = {
+//   multiPoint: Point[];
+// }
