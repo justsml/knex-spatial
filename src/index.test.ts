@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { reApplyPlugin, db } from './helpers';
-import { knex } from 'knex';
+import sql from '@sqltools/formatter';
+import dedent from 'dedent-js';
+
+const fmt = (s: string) =>
+  sql.format(s, { indent: '  ', reservedWordCase: 'upper', language: 'sql' });
 
 describe('Plugin setup', () => {
   it('should ignore repeated calls to add spatial methods to knex', () => {
@@ -17,8 +21,12 @@ describe('selectDistance', () => {
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select `id`, `name`, ST_Distance(`location`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS `distance` from `locations`",
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT \`id\`,
+        \`name\`,
+        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS \`distance\`
+      FROM \`locations\``,
     );
   });
 
@@ -31,7 +39,10 @@ describe('selectDistance', () => {
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe('select `id`, `name` from `locations`');
+    expect(fmt(query.sql)).toBe(dedent`
+    SELECT \`id\`,
+      \`name\`
+    FROM \`locations\``);
   });
 
   it('should include & sort on distance in query', () => {
@@ -43,8 +54,13 @@ describe('selectDistance', () => {
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select `id`, `name`, ST_Distance(`location`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS `distance` from `locations` order by `distance` asc",
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT \`id\`,
+        \`name\`,
+        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS \`distance\`
+      FROM \`locations\`
+      ORDER BY \`distance\` ASC`,
     );
   });
 });
@@ -55,16 +71,26 @@ describe('whereDistance', () => {
       .from('locations')
       .select('id', 'name')
       .selectDistance('location', { lat: 39.87, lon: -104.128, radius: 100 })
-      .whereDistanceWithin(
-        'location',
-        { lat: 39.87, lon: -104.128, radius: 100 },
-      )
+      .whereDistanceWithin('location', { lat: 39.87, lon: -104.128 }, 100)
       .orderBy('distance')
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select `id`, `name`, ST_Distance(`location`, ST_Buffer('POINT(-104.128 39.87)'::geography, 100)) / 1609.34 AS `distance` from `locations` where ST_DWithin(`location`, ST_Buffer('POINT(-104.128 39.87)'::geography, 100), ?) order by `distance` asc",
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT \`id\`,
+        \`name\`,
+        ST_Distance(
+          \`location\`,
+          ST_Buffer('POINT(-104.128 39.87)'::geography, 100)
+        ) / 1609.34 AS \`distance\`
+      FROM \`locations\`
+      WHERE ST_DWithin(
+          \`location\`,
+          'POINT(-104.128 39.87)'::geography,
+          100
+        )
+      ORDER BY \`distance\` ASC`,
     );
   });
 
@@ -75,14 +101,19 @@ describe('whereDistance', () => {
       .whereDistanceWithin(
         'location',
         // @ts-expect-error
-        { lat: undefined, lon: -104.128, radius: 100 }
+        { lat: undefined, lon: undefined },
+        100,
       )
       .orderBy('distance')
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select `id`, `name` from `locations` order by `distance` asc",
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT \`id\`,
+        \`name\`
+      FROM \`locations\`
+      ORDER BY \`distance\` ASC`,
     );
   });
 });
@@ -91,12 +122,20 @@ describe('selectIntersection', () => {
   it('should return intersection', () => {
     const query = db
       .from('locations')
-      .selectIntersection('location', { lat: 39.87, lon: -104.128, radius: 1_000 })
+      .selectIntersection('location', {
+        lat: 39.87,
+        lon: -104.128,
+        radius: 1_000,
+      })
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select ST_Intersection(`location`, ST_Buffer('POINT(-104.128 39.87)'::geography, 1000)) as `intersection` from `locations`",
+    expect(fmt(query.sql)).toBe(
+      dedent`SELECT ST_Intersection(
+        \`location\`,
+        ST_Buffer('POINT(-104.128 39.87)'::geography, 1000)
+      ) AS \`intersection\`
+    FROM \`locations\``,
     );
   });
 });
@@ -110,8 +149,9 @@ describe('selectBuffer', () => {
       .toSQL()
       .toNative();
 
-    expect(query.sql).toBe(
-      "select ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) as `buffer` from `locations`",
+    expect(fmt(query.sql)).toBe(
+      `SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS \`buffer\`
+FROM \`locations\``,
     );
   });
 });

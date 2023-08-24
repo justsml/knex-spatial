@@ -40,7 +40,11 @@ export function convertShapeToSql(s: Shape | undefined): string | undefined {
 }
 
 export const isValidShape = (p: unknown): boolean =>
-  isValidGeometry(p) || isValidGeography(p);
+  Array.isArray(p)
+    ? (p as any[]).every((inner: Point | Point[]) =>
+        Array.isArray(inner) ? inner.every(isValidPoint) : isValidPoint(inner),
+      )
+    : isValidPoint(p);
 export const isValidGeography = (p: unknown): boolean =>
   Array.isArray(p)
     ? (p as any[]).every((inner: Point | Point[]) =>
@@ -74,7 +78,7 @@ const isValidXY = (p: unknown) =>
   p.x !== undefined &&
   p.y !== undefined;
 
-// const isValidCoordinates = (p: Shape) => isValidLatLon(p) || isValidXY(p);
+export const isValidPoint = (p: unknown) => isValidLatLon(p) || isValidXY(p);
 
 // const isExplicitShape = (shape: any): shape is ExplicitShape =>
 //   shape != null &&

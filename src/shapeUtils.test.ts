@@ -10,6 +10,7 @@ import {
   isMultiLine,
   isCircle,
   isValidGeometry,
+  isValidShape,
 } from './shapeUtils';
 
 /* Geography-based fixtures */
@@ -102,13 +103,12 @@ describe('handles invalid input', () => {
     expect(convertShapeToSql(undefined)).toEqual(undefined);
   });
   it('should handle invalid {point}', () => {
+    expect(convertShapeToSql(undefined)).toEqual(undefined);
     // @ts-expect-error
-    expect(convertShapeToSql({ point: undefined })).toEqual(undefined);
-    // @ts-expect-error
-    expect(convertShapeToSql({ point: {
+    expect(convertShapeToSql({
       lat: undefined,
       lon: 1,
-    } })).toEqual(undefined);
+    })).toEqual(undefined);
   });
   it('should detect undefined values', () => {
     expect(isValidGeometry(undefined)).toEqual(false);
@@ -119,8 +119,23 @@ describe('handles invalid input', () => {
     expect(isValidGeometry({ y: 1, x: undefined })).toEqual(false);
     expect(isValidGeometry([{ lat: undefined, lon: 1 }])).toEqual(false);
     expect(isValidGeometry([[{ lat: 1, lon: undefined }]])).toEqual(false);
-    
   });
+  it('should detect invalid geography', () => {
+    expect(isValidGeography({ lat: undefined, lon: 1 })).toEqual(false);
+    expect(isValidGeography({ lat: 1, lon: undefined })).toEqual(false);
+    expect(isValidGeography({ lat: undefined, lon: undefined })).toEqual(false);
+    expect(isValidShape({ lat: undefined, lon: 1 })).toEqual(false);
+    expect(isValidShape({ lat: 1, lon: undefined })).toEqual(false);
+    expect(isValidShape({ lat: undefined, lon: undefined })).toEqual(false);
+    
+    expect(isValidShape({ y: undefined, x: 1 })).toEqual(false);
+    expect(isValidShape({ y: 1, x: undefined })).toEqual(false);
+    expect(isValidShape({ y: undefined, x: undefined })).toEqual(false);
+    
+    expect(isValidShape([{ y: 1, x: undefined }])).toEqual(false);
+    expect(isValidShape([[{ y: 1, x: undefined }]])).toEqual(false);
+
+  })
 });
 
 

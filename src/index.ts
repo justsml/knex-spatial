@@ -6,12 +6,22 @@ import {
   isValidGeography,
   isValidGeometry,
   isValidShape,
+  isValidPoint,
 } from './shapeUtils';
 
 let _db: Knex;
+let _options: PluginOptions;
 
-export default function KnexSpatialPlugin(db: Knex) {
+type PluginOptions = {
+  throwOnUndefined?: boolean;
+};
+
+export default function KnexSpatialPlugin(
+  db: Knex,
+  options: PluginOptions = {},
+) {
   _db = db;
+  _options = options;
   try {
     knex.QueryBuilder.extend('selectDistance', selectDistance);
     knex.QueryBuilder.extend('selectBuffer', selectBuffer);
@@ -113,33 +123,29 @@ function whereDistanceWithin<
   TResult extends {} = unknown[],
 >(
   this: Knex.QueryBuilder<TRecord, TResult>,
-  geoColumnName: string,
-  inputShape: Shape,
+  columnName: string,
+  columnOrShape: string | Shape,
   distanceMeters?: number,
 ) {
-  if (!isCircle(inputShape) || !isValidGeography(inputShape)) return this;
+  let rightColumn =
+    typeof columnOrShape === 'string' ? columnOrShape : undefined;
+  let rightShape = isValidShape(columnOrShape) ? columnOrShape : undefined;
 
-  let distance = isCircle(inputShape) ? inputShape?.radius : distanceMeters;
+  if (!distanceMeters)
+    throw new Error('whereDistanceWithin: Missing distanceMeters');
 
-  return this.whereRaw(`ST_DWithin(??, ${convertShapeToSql(inputShape)}, ?)`, [
-    geoColumnName,
-    distance,
-  ]);
+  if (rightShape && !isValidShape(rightShape)) return this;
+
+  if (!rightShape && !rightColumn) return this;
+
+  return this.whereRaw(
+    `ST_DWithin(??, ${
+      rightColumn ? rightColumn : convertShapeToSql(rightShape as Shape)
+    }, ${Number(distanceMeters)})`,
+    [columnName],
+  );
 }
 
-/** Sql Operator Map */
-const Operators = {
-  '=': '=',
-  '!=': '<>',
-  '>': '>',
-  '>=': '>=',
-  '<': '<',
-  '<=': '<=',
-  '<>': '<>',
-  '!==': '<>',
-  '==': '=',
-  '===': '=',
-};
 function whereDistance<
   TRecord extends {} = any,
   TResult extends {} = unknown[],
@@ -197,12 +203,15 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
       _db.raw(`ST_Buffer(??, ?) as ??`, [columnOrShape, distance, columnAlias]),
     );
   }
-  console.log('selectBuffer', columnOrShape, distance, columnAlias);
+  // console.log('selectBuffer', columnOrShape, distance, columnAlias);
   if (isValidGeometry(columnOrShape) || isValidGeography(columnOrShape)) {
     return this.select(
-      _db.raw(`ST_Buffer(${convertShapeToSql(columnOrShape)}, ${Number(distance)}) as ??`, [
-        columnAlias,
-      ]),
+      _db.raw(
+        `ST_Buffer(${convertShapeToSql(columnOrShape)}, ${Number(
+          distance,
+        )}) as ??`,
+        [columnAlias],
+      ),
     );
   }
   return this;
@@ -316,6 +325,19 @@ declare module 'knex' {
     }
   }
 }
+/** Sql Operator Map */
+const Operators = {
+  '=': '=',
+  '!=': '<>',
+  '>': '>',
+  '>=': '>=',
+  '<': '<',
+  '<=': '<=',
+  '<>': '<>',
+  '!==': '<>',
+  '==': '=',
+  '===': '=',
+};
 
 /*
 | Equals | Equals( geom1 Geometry , geom2 Geometry ) : Integer ST_Equals( geom1 Geometry , geom2 Geometry ) : Integer | X | GEOS | The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, and –1 for UNKNOWN when called with NULL arguments. TRUE if g1 and g2 are equal |
