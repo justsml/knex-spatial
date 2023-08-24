@@ -24,7 +24,6 @@ export default function KnexSpatialPlugin(
   _db = db;
   _options = options;
   try {
-
     knex.QueryBuilder.extend('selectDistance', selectDistance);
     knex.QueryBuilder.extend('selectBuffer', selectBuffer);
     knex.QueryBuilder.extend('selectIntersection', selectIntersection);
@@ -42,7 +41,6 @@ export default function KnexSpatialPlugin(
     knex.QueryBuilder.extend('whereCrosses', whereCrosses);
     knex.QueryBuilder.extend('whereIntersects', whereIntersects);
     knex.QueryBuilder.extend('whereRelateMatch', whereRelateMatch);
-
   } catch (error) {
     /* c8 ignore next 3 */
     if (error.message.includes(`Can't extend`)) return db;
@@ -53,59 +51,59 @@ export default function KnexSpatialPlugin(
 
 /**
  * Expresses a where clause that compares the spatial relationship between two Geometries.
- * 
+ *
  * @param methodName - a GIS method name (https://postgis.net/docs/manual-3.4/reference.html#idm12252)
- * @returns 
+ * @returns
  */
-const wherePredicateWrapper = (methodName: string) => function whereHelper<
-  TRecord extends {} = any,
-  TResult extends {} = unknown[],
->(
-  this: Knex.QueryBuilder<TRecord, TResult>,
-  leftShapeOrColumn: ShapeOrColumn,
-  rightShapeOrColumn: ShapeOrColumn,
-): Knex.QueryBuilder<TRecord, TResult> {
-  const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
-  const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
-  if (!lhs || !rhs) return this;
+const wherePredicateWrapper = (methodName: string) =>
+  function whereHelper<
+    TRecord extends {} = any,
+    TResult extends {} = unknown[],
+  >(
+    this: Knex.QueryBuilder<TRecord, TResult>,
+    leftShapeOrColumn: ShapeOrColumn,
+    rightShapeOrColumn: ShapeOrColumn,
+  ): Knex.QueryBuilder<TRecord, TResult> {
+    const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
+    const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
+    if (!lhs || !rhs) return this;
 
-  return this.whereRaw(
-    `${methodName}(${lhs}, ${rhs})`,
-  );
-}
-
+    return this.whereRaw(`${methodName}(${lhs}, ${rhs})`);
+  };
 
 /**
  * Expresses a where clause that applies an operator against a spatial function.
- * 
+ *
  * @param methodName - a GIS method name (https://postgis.net/docs/manual-3.4/reference.html#idm12252)
- * @returns 
+ * @returns
  */
-const whereConditionalWrapper = (methodName: string) => function whereHelper<
-  TRecord extends {} = any,
-  TResult extends {} = unknown[],
->(
-  this: Knex.QueryBuilder<TRecord, TResult>,
-  leftShapeOrColumn: ShapeOrColumn,
-  rightShapeOrColumn: ShapeOrColumn,
-  operator: keyof typeof Operators,
-  distance?: number,
-  useUnits: Unit = 'miles',
-): Knex.QueryBuilder<TRecord, TResult> {
-  if (!Operators[operator]) throw new Error(`Invalid operator: ${operator}`);
-  const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
-  const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
-  if (!lhs || !rhs) return this;
+const whereConditionalWrapper = (methodName: string) =>
+  function whereHelper<
+    TRecord extends {} = any,
+    TResult extends {} = unknown[],
+  >(
+    this: Knex.QueryBuilder<TRecord, TResult>,
+    leftShapeOrColumn: ShapeOrColumn,
+    rightShapeOrColumn: ShapeOrColumn,
+    operator: keyof typeof Operators,
+    distance?: number,
+    useUnits: Unit = 'miles',
+  ): Knex.QueryBuilder<TRecord, TResult> {
+    if (!Operators[operator]) throw new Error(`Invalid operator: ${operator}`);
+    const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
+    const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
+    if (!lhs || !rhs) return this;
 
-  if (!distance || Number.isNaN(distance))
-    throw new Error('where: ' + methodName + ': Missing expression value (distance)');
-  if (useUnits === 'meters') distance = distance * 1609.34;
+    if (!distance || Number.isNaN(distance))
+      throw new Error(
+        'where: ' + methodName + ': Missing expression value (distance)',
+      );
+    if (useUnits === 'meters') distance = distance * 1609.34;
 
-  return this.whereRaw(
-    `${methodName}(${lhs}, ${rhs}) ${operator} ${Number(distance)}`,
-  );
-}
-
+    return this.whereRaw(
+      `${methodName}(${lhs}, ${rhs}) ${operator} ${Number(distance)}`,
+    );
+  };
 
 /**
  * # Knex Geospatial Plugin
@@ -223,7 +221,6 @@ const whereOverlaps = wherePredicateWrapper('ST_Overlaps');
 const whereCrosses = wherePredicateWrapper('ST_Crosses');
 const whereIntersects = wherePredicateWrapper('ST_Intersects');
 const whereRelateMatch = wherePredicateWrapper('ST_RelateMatch');
-
 
 // function whereTouches<TRecord extends {} = any, TResult extends {} = unknown[]>(
 //   this: Knex.QueryBuilder<TRecord, TResult>,

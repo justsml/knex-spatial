@@ -250,13 +250,7 @@ describe('whereDistance', () => {
     const query = db
       .from('locations')
       .select('id')
-      .whereDistance(
-        'location',
-        'a_point',
-        '<=',
-        100,
-        'meters',
-      )
+      .whereDistance('location', 'a_point', '<=', 100, 'meters')
       .orderBy('distance')
       .toSQL()
       .toNative();
@@ -269,8 +263,6 @@ describe('whereDistance', () => {
       ORDER BY \`distance\` ASC`,
     );
   });
-
-
 });
 
 describe('whereDistanceWithin', () => {
@@ -445,7 +437,7 @@ describe('whereContains', () => {
       .select('id')
       .whereContains('location', {
         lat: 39.87,
-        lon: -104.128
+        lon: -104.128,
       })
       .toSQL()
       .toNative();
@@ -463,7 +455,7 @@ describe('whereContains', () => {
       // @ts-expect-error
       .whereContains('location', {
         lat: undefined,
-        lon: -104.128
+        lon: -104.128,
       })
       .toSQL()
       .toNative();
@@ -472,6 +464,4 @@ describe('whereContains', () => {
     SELECT \`id\`
     FROM \`locations\``);
   });
-
 });
-
