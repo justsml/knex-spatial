@@ -15,37 +15,34 @@ export function parseShapeOrColumnToSafeSql(
  */
 export function convertShapeToSql(s: Shape | undefined): string | undefined {
   if (!s) return undefined;
-  // let shape = !isExplicitShape(s) ? convertToExplicitShape(s) : s;
-  // if (!shape) return undefined;
-  // let s = convertToShape(shape);
-  // if (!s) return undefined;
+  const srid = s.srid ? `SRID=${Number(s.srid)};` : '';
   const isGeography = isValidGeography(s);
   const castType = isGeography ? 'geography' : 'geometry';
 
   if (isCircle(s)) {
     const c = s;
-    return `ST_Buffer('POINT(${getX(c)} ${getY(c)})'::${castType}, ${
+    return `ST_Buffer('${srid}POINT(${getX(c)} ${getY(c)})'::${castType}, ${
       c.radius
     })`;
   }
 
-  if (isPoint(s)) return `'POINT(${getX(s)} ${getY(s)})'::${castType}`;
+  if (isPoint(s)) return `'${srid}POINT(${getX(s)} ${getY(s)})'::${castType}`;
 
   if (isMultiPolygon(s))
-    return `'MULTIPOLYGON(${s
+    return `'${srid}MULTIPOLYGON(${s
       .map((p) => `(${p.map((p) => `${getX(p)} ${getY(p)}`).join(', ')})`)
       .join(', ')})'::${castType}`;
   if (isPolygon(s))
-    return `'POLYGON(${s
+    return `'${srid}POLYGON(${s
       .map((p) => `${getX(p)} ${getY(p)}`)
       .join(', ')})'::${castType}`;
   if (isMultiLine(s))
-    return `'MULTILINESTRING(${s
+    return `'${srid}MULTILINESTRING(${s
       // @ts-expect-error
       .map((p) => `(${p.map((p) => `${getX(p)} ${getY(p)}`).join(', ')})`)
       .join(', ')})'::${castType}`;
   if (isLine(s))
-    return `'LINESTRING(${s
+    return `'${srid}LINESTRING(${s
       // @ts-expect-error
       .map((p) => `${getX(p)} ${getY(p)}`)
       .join(', ')})'::${castType}`;

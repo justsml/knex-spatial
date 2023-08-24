@@ -201,6 +201,14 @@ describe('convertShapeToSqlWKT', () => {
     const expected = `ST_Buffer('POINT(-1 1)'::geography, 100)`;
     expect(convertShapeToSql(circle)).toEqual(expected);
   });
+
+  it('should support SRID values', () => {
+    const point = {lat: 1, lon: -1, srid: 4326};
+    
+    const expected = `'SRID=4326;POINT(-1 1)'::geography`;
+    expect(convertShapeToSql(point)).toEqual(expected);
+  });
+
 });
 
 describe('containsGeography', () => {
