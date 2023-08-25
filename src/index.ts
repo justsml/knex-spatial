@@ -9,7 +9,7 @@ import sqlFunctionBuilder from './utils/functionBuilder';
 import { metersToUnitMathLiteral, unitToMetersMathLiteral } from './utils/units';
 
 // Re-export helpers
-export { convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
+export { sqlFunctionBuilder, convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
 
 let _db: Knex;
 let _options: PluginOptions;
@@ -304,7 +304,7 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
     .unit(useUnits)
     .alias(columnAlias);
 
-  return this.select(_db.raw(fnExpr.build()));
+  return fnExpr._preventBuild ? this : this.select(_db.raw(fnExpr.build()));
 
   // return this;
 }

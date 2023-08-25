@@ -140,6 +140,17 @@ describe('sqlFunctionBuilder: Core Methods', () => {
     expect(fn).toBe('ST_Buffer(`point_a`, 5 * 10000) AS `distance`');
   });
 
+  it('should support literal arg "5 hectares"', () => {
+    const fn = builder('ST_Buffer')
+      .arg('point_a')
+      .arg('5 hectares')
+      .unit('meters')
+      .alias('distance')
+      .build();
+
+    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 10000) AS `distance`');
+  });
+  
   it('should support literal arg "5ac" (acres)', () => {
     const fn = builder('ST_Buffer')
       .arg('point_a')
@@ -162,5 +173,48 @@ describe('sqlFunctionBuilder: Core Methods', () => {
     expect(fn).toBe("ST_Buffer('POINT(-1 1)'::geography, 250 * 1609.344) AS `distance`");
   });
 
+  it('should support unit arg "hectares"', () => {
+    const fn = builder('ST_Buffer')
+      .arg('point_a')
+      .arg('5 meters')
+      .unit('hectares')
+      .alias('distance')
+      .build();
+
+    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 10000 AS `distance`');
+  });
+
+  it('should support unit arg "acres"', () => {
+    const fn = builder('ST_Buffer')
+      .arg('point_a')
+      .arg('5 meters')
+      .unit('acres')
+      .alias('distance')
+      .build();
+
+    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 4046.8564224 AS `distance`');
+  });
+
+  it('should support unit arg "feet"', () => {
+    const fn = builder('ST_Buffer')
+      .arg('point_a')
+      .arg('5 meters')
+      .unit('feet')
+      .alias('distance')
+      .build();
+
+    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 0.3048 AS `distance`');
+  });
+
+  it('should support unit arg "yards"', () => {
+    const fn = builder('ST_Buffer')
+      .arg('point_a')
+      .arg('5 meters')
+      .unit('yards')
+      .alias('distance')
+      .build();
+
+    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 0.9144 AS `distance`');
+  });
 
 });

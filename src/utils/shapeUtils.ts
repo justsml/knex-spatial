@@ -1,18 +1,23 @@
-import { saferSql } from "./escaping";
+import { saferSql } from './escaping';
 
 /**
  * Utility functions for working with PostGIS shapes & columns.
- * @param shapeOrColumn 
+ * @param shapeOrColumn
  */
 export function parseShapeOrColumnToSafeSql(
   shapeOrColumn: ShapeColumnOrLiteral | undefined,
 ): string | undefined {
   // if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
-  if (typeof shapeOrColumn === 'number') return Number(shapeOrColumn).toString();
+  if (typeof shapeOrColumn === 'number')
+    return Number(shapeOrColumn).toString();
   if (typeof shapeOrColumn === 'boolean') return shapeOrColumn.toString();
   // TODO: Add better check for column expressions  (defend against Sql Injection)
-  if (typeof shapeOrColumn === 'string') return '`' + saferSql`${shapeOrColumn}` + '`';
-  return convertShapeToSql(shapeOrColumn);
+  if (typeof shapeOrColumn === 'string')
+    return '`' + saferSql`${shapeOrColumn}` + '`';
+  if (typeof shapeOrColumn === 'object' && shapeOrColumn !== null)
+    return convertShapeToSql(shapeOrColumn);
+
+  return undefined;
 }
 /**
  * A helper for generating Well-known Text (WKT) for working with PostGIS shapes.
@@ -150,6 +155,16 @@ export const isPoint = (s: unknown): s is Point =>
   (('lat' in s && 'lon' in s && s.lat !== undefined && s.lon !== undefined) ||
     ('x' in s && 'y' in s && s.x !== undefined && s.y !== undefined));
 
+export const isPointUndefined = (s: unknown): boolean =>
+  Array.isArray(s)
+    ? false
+    : s instanceof Object &&
+      (('radius' in s && s.radius === undefined) ||
+        ('lat' in s &&
+          'lon' in s &&
+          (s.lat === undefined || s.lon === undefined)) ||
+        ('x' in s && 'y' in s && (s.x === undefined || s.y === undefined)));
+
 /** Circle Type Guard */
 export const isCircle = (s: unknown): s is Circle =>
   s instanceof Object &&
@@ -184,3 +199,26 @@ export const isMultiLine = (s: unknown): s is MultiLine =>
 export const isMultiPolygon = (s: unknown): s is MultiPolygon =>
   Array.isArray(s) && s.every(isPolygon);
 
+/** Detect undefined in shapes - used to skip applying functionality */
+export const shapeContainsUndefined = (s: unknown): boolean =>
+  isPointUndefined(s) ||
+  (Array.isArray(s) &&
+    (s.some(isPointUndefined) ||
+      s.some((inner) =>
+        Array.isArray(inner)
+          ? inner.some(isPointUndefined)
+          : isPointUndefined(inner),
+      )));
+
+// export const isPointArrayUndefined = (s: unknown): boolean =>
+//   Array.isArray(s) && s.some(isPointUndefined);
+
+// export const isPolygonUndefined = isPointArrayUndefined;
+
+// /** MultiLine Type Guard */
+// export const isMultiLineUndefined = (s: unknown): boolean =>
+//   Array.isArray(s) && s.some(isPointArrayUndefined);
+
+// /** MultiPolygon Type Guard */
+// export const isMultiPolygonUndefined = (s: unknown): boolean =>
+//   Array.isArray(s) && s.some(isPointArrayUndefined);

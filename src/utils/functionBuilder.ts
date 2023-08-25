@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { isValidShape, parseShapeOrColumnToSafeSql } from './shapeUtils';
+import { isValidShape, parseShapeOrColumnToSafeSql, shapeContainsUndefined } from './shapeUtils';
 import { hasUnits, metersToUnitMathLiteral, parseHumanNumber, unitToMetersMathLiteral } from './units';
 import { safeColumn } from './escaping';
 
@@ -13,6 +13,9 @@ class SqlFunctionBuilder {
   private _arguments: any[]; // TODO: Use Knex.Raw instead of any
   private _unit: Unit;
   private _alias: string;
+
+  /** Indicates an invalid state was encountered, do not emit broken fragments of SQL */
+  _preventBuild: boolean = false;
 
   // Advanced
   private _aggregateFns: string[];
@@ -28,6 +31,11 @@ class SqlFunctionBuilder {
     this._aggregateFns = [];
   }
 
+  /** Updates _preventBuild if we don't have minimum values */
+  _checkConfig() {
+    if (!this._name || this._name.length <= 0) this._preventBuild = true;
+    if (!this._arguments || this._arguments.length <= 0) this._preventBuild = true;
+  }
   name(_name: string) {
     this._name = _name;
     return this;
@@ -35,6 +43,10 @@ class SqlFunctionBuilder {
 
   // arg(_arg: ShapeColumnOrLiteral): ThisType<SqlFunctionBuilder>;
   arg(_arg: ShapeColumnOrLiteral, unit: undefined | Unit = undefined): SqlFunctionBuilder {
+    if (shapeContainsUndefined(_arg)) {
+      this._preventBuild = true;
+      return this;
+    }
     const isShape = isValidShape(_arg);
     let sqlExpr = parseShapeOrColumnToSafeSql(_arg);
 
@@ -58,6 +70,9 @@ class SqlFunctionBuilder {
           this._arguments.push(`${value}${unitToMetersMathLiteral(unit)}`);
           return this;
         }
+      } else if (typeof _arg === 'number') {
+        this._arguments.push(_arg);
+        return this;
       }
       this._arguments.push(sqlExpr);
     }
@@ -80,6 +95,7 @@ class SqlFunctionBuilder {
   }
 
   build() {
+    if (this._preventBuild) return '';
     const { _db, _name, _arguments, _unit, _alias, _aggregateFns } = this;
     if (_arguments[0] === undefined) return ''; // throw new Error('Invalid argument provided to SqlFunctionBuilder');
     const fn = _db.raw(`${_name}(${_arguments.join(', ')})`);
