@@ -30,12 +30,12 @@ type Circle =
   | {
       lat: number;
       lon: number;
-      radius: number;
+      radius: number | string;
     }
   | {
       x: number;
       y: number;
-      radius: number;
+      radius: number | string;
     };
 /** While Line and Polygon are typed the same, the system handles
  * shorthand expressions due to polygons having the same start and end coordinates. */

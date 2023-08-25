@@ -25,34 +25,34 @@ export default function KnexSpatialPlugin(
   _db = db;
   _options = options;
   try {
-    knex.QueryBuilder.extend('selectDistance', selectDistance);
     knex.QueryBuilder.extend('selectArea', selectArea);
     knex.QueryBuilder.extend('selectBuffer', selectBuffer);
-    knex.QueryBuilder.extend('selectIntersection', selectIntersection);
-    knex.QueryBuilder.extend('selectLength', selectLength);
     knex.QueryBuilder.extend('selectCentroid', selectCentroid);
-    knex.QueryBuilder.extend('selectEnvelope', selectEnvelope);
     knex.QueryBuilder.extend('selectConvexHull', selectConvexHull);
     knex.QueryBuilder.extend('selectDifference', selectDifference);
+    knex.QueryBuilder.extend('selectDistance', selectDistance);
+    knex.QueryBuilder.extend('selectDistanceSphere', selectDistanceSphere);
+    knex.QueryBuilder.extend('selectDistanceSpheroid', selectDistanceSpheroid);
+    knex.QueryBuilder.extend('selectEnvelope', selectEnvelope);
+    knex.QueryBuilder.extend('selectIntersection', selectIntersection);
+    knex.QueryBuilder.extend('selectLength', selectLength);
     knex.QueryBuilder.extend('selectSymDifference', selectSymDifference);
     knex.QueryBuilder.extend('selectUnion', selectUnion);
-    knex.QueryBuilder.extend('selectDistanceSpheroid', selectDistanceSpheroid);
-    knex.QueryBuilder.extend('selectDistanceSphere', selectDistanceSphere);
 
-    knex.QueryBuilder.extend('whereDistanceWithin', whereDistanceWithin);
-    knex.QueryBuilder.extend('whereDistance', whereDistance);
-    knex.QueryBuilder.extend('whereWithin', whereWithin);
-    knex.QueryBuilder.extend('whereTouches', whereTouches);
     knex.QueryBuilder.extend('whereContains', whereContains);
     knex.QueryBuilder.extend('whereContainsProperly', whereContainsProperly);
     knex.QueryBuilder.extend('whereCoveredBy', whereCoveredBy);
     knex.QueryBuilder.extend('whereCovers', whereCovers);
-    knex.QueryBuilder.extend('whereDisjoint', whereDisjoint);
-    knex.QueryBuilder.extend('whereEquals', whereEquals);
-    knex.QueryBuilder.extend('whereOverlaps', whereOverlaps);
     knex.QueryBuilder.extend('whereCrosses', whereCrosses);
+    knex.QueryBuilder.extend('whereDisjoint', whereDisjoint);
+    knex.QueryBuilder.extend('whereDistance', whereDistance);
+    knex.QueryBuilder.extend('whereDistanceWithin', whereDistanceWithin);
+    knex.QueryBuilder.extend('whereEquals', whereEquals);
     knex.QueryBuilder.extend('whereIntersects', whereIntersects);
-    knex.QueryBuilder.extend('whereRelateMatch', whereRelateMatch);
+    knex.QueryBuilder.extend('whereOverlaps', whereOverlaps);
+    knex.QueryBuilder.extend('whereRelate', whereRelate);
+    knex.QueryBuilder.extend('whereTouches', whereTouches);
+    knex.QueryBuilder.extend('whereWithin', whereWithin);
   } catch (error) {
     /* c8 ignore next 3 */
     if (error.message.includes(`Can't extend`)) return db;
@@ -223,69 +223,31 @@ function whereDistanceWithin<
   );
 }
 
-const selectIntersection = selectBinaryFunctionColumnWrapper(
-  'ST_Intersection',
-  'intersection',
-);
 const selectArea = selectUnaryFunctionColumnWrapper('ST_Area', 'area');
+const selectCentroid = selectUnaryFunctionColumnWrapper('ST_Centroid', 'centroid',);
+const selectConvexHull = selectUnaryFunctionColumnWrapper('ST_ConvexHull', 'convex_hull',);
+const selectDifference = selectBinaryFunctionColumnWrapper('ST_Difference', 'difference');
+const selectDistanceSphere = selectBinaryFunctionColumnWrapper('ST_DistanceSphere', 'distance_sphere');
+const selectDistanceSpheroid = selectBinaryFunctionColumnWrapper('ST_DistanceSpheroid', 'distance_spheroid');
+const selectEnvelope = selectUnaryFunctionColumnWrapper('ST_Envelope', 'envelope',);
+const selectIntersection = selectBinaryFunctionColumnWrapper('ST_Intersection', 'intersection');
 const selectLength = selectUnaryFunctionColumnWrapper('ST_Length', 'length');
-const selectCentroid = selectUnaryFunctionColumnWrapper(
-  'ST_Centroid',
-  'centroid',
-);
-const selectEnvelope = selectUnaryFunctionColumnWrapper(
-  'ST_Envelope',
-  'envelope',
-);
-const selectConvexHull = selectUnaryFunctionColumnWrapper(
-  'ST_ConvexHull',
-  'convexHull',
-);
-const selectDifference = selectBinaryFunctionColumnWrapper(
-  'ST_Difference',
-  'difference',
-);
-const selectSymDifference = selectBinaryFunctionColumnWrapper(
-  'ST_SymDifference',
-  'symDifference',
-);
+const selectSymDifference = selectBinaryFunctionColumnWrapper('ST_SymDifference', 'sym_difference');
 const selectUnion = selectBinaryFunctionColumnWrapper('ST_Union', 'union');
-// const selectBuffer = selectBinaryFunctionColumnWrapper('ST_Buffer', 'buffer');
-const selectDistanceSpheroid = selectBinaryFunctionColumnWrapper(
-  'ST_DistanceSpheroid',
-  'distanceSpheroid',
-);
-const selectDistanceSphere = selectBinaryFunctionColumnWrapper(
-  'ST_DistanceSphere',
-  'distanceSphere',
-);
 
-const whereDistance = whereConditionalWrapper('ST_Distance');
-const whereTouches = wherePredicateWrapper('ST_Touches');
-const whereWithin = wherePredicateWrapper('ST_Within');
 const whereContains = wherePredicateWrapper('ST_Contains');
 const whereContainsProperly = wherePredicateWrapper('ST_ContainsProperly');
 const whereCoveredBy = wherePredicateWrapper('ST_CoveredBy');
 const whereCovers = wherePredicateWrapper('ST_Covers');
-const whereDisjoint = wherePredicateWrapper('ST_Disjoint');
-const whereEquals = wherePredicateWrapper('ST_Equals');
-const whereOverlaps = wherePredicateWrapper('ST_Overlaps');
 const whereCrosses = wherePredicateWrapper('ST_Crosses');
+const whereDisjoint = wherePredicateWrapper('ST_Disjoint');
+const whereDistance = whereConditionalWrapper('ST_Distance');
+const whereEquals = wherePredicateWrapper('ST_Equals');
 const whereIntersects = wherePredicateWrapper('ST_Intersects');
-const whereRelateMatch = wherePredicateWrapper('ST_RelateMatch');
-
-// function whereTouches<TRecord extends {} = any, TResult extends {} = unknown[]>(
-//   this: Knex.QueryBuilder<TRecord, TResult>,
-//   geoColumnName: string,
-//   inputShape: Shape,
-// ) {
-//   if (!isValidGeometry(inputShape) || !isValidGeography(inputShape))
-//     return this;
-
-//   return this.whereRaw(`ST_Touches(??, ${convertShapeToSql(inputShape)})`, [
-//     geoColumnName,
-//   ]);
-// }
+const whereOverlaps = wherePredicateWrapper('ST_Overlaps');
+const whereRelate = wherePredicateWrapper('ST_Relate');
+const whereTouches = wherePredicateWrapper('ST_Touches');
+const whereWithin = wherePredicateWrapper('ST_Within');
 
 function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   this: Knex.QueryBuilder<TRecord, TResult>,
@@ -404,7 +366,7 @@ declare module 'knex' {
       whereOverlaps: typeof whereOverlaps;
       whereCrosses: typeof whereCrosses;
       whereIntersects: typeof whereIntersects;
-      whereRelateMatch: typeof whereRelateMatch;
+      whereRelate: typeof whereRelate;
 
       /**
        * ST_Within - Returns TRUE if the geometry A is completely inside geometry B

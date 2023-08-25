@@ -235,6 +235,12 @@ describe('convertShapeToSqlWKT', () => {
     expect(convertShapeToSql(circle)).toEqual(expected);
   });
 
+  it('should create a circle with "10km" radius', () => {
+    const circle = { lat: 1, lon: -1, radius: '10km' };
+    const expected = `ST_Buffer('POINT(-1 1)'::geography, 10 * 1000)`;
+    expect(convertShapeToSql(circle)).toEqual(expected);
+  });
+
   it('should support SRID values', () => {
     const point = {lat: 1, lon: -1, srid: 4326};
     

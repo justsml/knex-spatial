@@ -1,4 +1,5 @@
 import { saferSql } from './escaping';
+import { hasUnits, parseHumanMeasurement, unitToMetersMathLiteral } from './units';
 
 /**
  * Utility functions for working with PostGIS shapes & columns.
@@ -19,6 +20,7 @@ export function parseShapeOrColumnToSafeSql(
 
   return undefined;
 }
+
 /**
  * A helper for generating Well-known Text (WKT) for working with PostGIS shapes.
  */
@@ -30,9 +32,10 @@ export function convertShapeToSql(s: Shape | undefined): string | undefined {
 
   if (isCircle(s)) {
     const c = s;
+    const rad = typeof c.radius === 'string' && hasUnits(c.radius) ? parseHumanMeasurement(c.radius) : {unit: 'meters', value: c.radius}
     return `ST_Buffer('${srid}POINT(${getX(c)} ${getY(c)})'::${castType}, ${
-      c.radius
-    })`;
+      rad.value
+    }${unitToMetersMathLiteral(rad.unit as Unit)})`;
   }
 
   if (isPoint(s)) return `'${srid}POINT(${getX(s)} ${getY(s)})'::${castType}`;
