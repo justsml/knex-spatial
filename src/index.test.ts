@@ -95,8 +95,23 @@ describe('selectBuffer', () => {
       .toNative();
 
     expect(fmt(query.sql)).toBe(
-      `SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS \`buffer\`
-FROM \`locations\``,
+      dedent`
+      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS \`buffer\`
+      FROM \`locations\``,
+    );
+  });
+
+  it('should return buffer using miles', () => {
+    const query = db
+      .from('locations')
+      .selectBuffer({ lat: 39.87, lon: -104.128 }, 10, 'miles')
+      .toSQL()
+      .toNative();
+
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 16093.4) AS \`buffer\`
+      FROM \`locations\``,
     );
   });
 

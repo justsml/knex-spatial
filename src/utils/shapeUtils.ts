@@ -4,10 +4,13 @@
  * @param shapeOrColumn 
  */
 export function parseShapeOrColumnToSafeSql(
-  shapeOrColumn: ShapeOrColumn | undefined,
+  shapeOrColumn: ShapeColumnOrLiteral | undefined,
 ): string | undefined {
   // if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
-  if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn + '`';
+  if (typeof shapeOrColumn === 'number') return Number(shapeOrColumn).toString();
+  if (typeof shapeOrColumn === 'boolean') return shapeOrColumn.toString();
+  // TODO: Add better check for column expressions  (defend against Sql Injection)
+  if (typeof shapeOrColumn === 'string') return '`' + safer`${shapeOrColumn}` + '`';
   return convertShapeToSql(shapeOrColumn);
 }
 /**
@@ -179,3 +182,25 @@ export const isMultiLine = (s: unknown): s is MultiLine =>
 /** MultiPolygon Type Guard */
 export const isMultiPolygon = (s: unknown): s is MultiPolygon =>
   Array.isArray(s) && s.every(isPolygon);
+
+
+
+console.warn(`TODO: Make safeSql() more robust!`);
+const safeSql = (s: string) => s.replace(/[`"']+/gm, '');
+
+const safer = (strings: TemplateStringsArray, ...values: any[]) =>
+  strings.reduce(
+    (acc, str, i) => acc + safeSql(str) + (values[i] || ''),
+    '',
+  );
+  // Example usage of safer:
+  // const sql = safer`SELECT * FROM ${tableName} WHERE ${columnName} = ${columnValue}`;
+// a template literal tag for escaping SQL primitive values
+// const safev = (strings: TemplateStringsArray, ...values: any[]) =>
+//   strings.reduce(
+//     (acc, str, i) => acc + str + _db.raw('?', [values[i]]),
+//     '',
+//   );
+
+
+

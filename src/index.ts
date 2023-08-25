@@ -4,7 +4,7 @@ import {
   convertShapeToSql,
   isValidShape,
   parseShapeOrColumnToSafeSql,
-} from './shapeUtils';
+} from './utils/shapeUtils';
 
 // Re-export helpers
 export { convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
@@ -321,7 +321,9 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   this: Knex.QueryBuilder<TRecord, TResult>,
   columnOrShape: string | Shape,
   distance: number,
+  useUnits: Unit = 'miles',
   columnAlias = 'buffer',
+  
 ): Knex.QueryBuilder<TRecord, TResult> {
   if (Number.isNaN(distance) || distance == null) return this;
   if (typeof columnOrShape === 'string') {

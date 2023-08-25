@@ -8,7 +8,9 @@
 
 type ShapeOrColumn = Shape | string;
 
-type Unit = 'meters' | 'miles' | 'kilometers' | 'hectares' | 'acres';
+type ShapeColumnOrLiteral = Shape | string | number | boolean;
+
+type Unit = 'meters' | 'miles' | 'kilometers' | 'hectares' | 'acres' | 'feet' | 'yards' | 'inches'
 
 type Shape = (Point | Circle | Line | Polygon | MultiPolygon | MultiLine) & {
   srid?: number;
