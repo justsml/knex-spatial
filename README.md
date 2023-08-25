@@ -6,7 +6,7 @@
 
 A Knex plugin for easy operations on geometric & geospatial data in Postgres.
 
-A fluent, expressive and natural API design.
+Featuring a fluent, expressive and natural API design.
 
 - [Get Started](#get-started)
 - [Methods](#methods)
@@ -34,13 +34,15 @@ A fluent, expressive and natural API design.
   - [`whereTouches`](#wheretouches)
   - [`whereWithin`](#wherewithin)
 - [Expressive Shape API](#expressive-shape-api)
-  - [Geography Shapes](#geography-shapes)
-  - [Geometry Shapes](#geometry-shapes)
-  - [Examples](#examples)
-- [Powerful Syntax Builder API](#powerful-syntax-builder-api)
+  - [`convertShapeToSql` Usage](#convertshapetosql-usage)
+  - [Shape Object Syntax Examples](#shape-object-syntax-examples)
+  - [Geography Shapes in JSON](#geography-shapes-in-json)
+- [SQL Function Syntax Builder API](#sql-function-syntax-builder-api)
+  - [`sqlFunctionBuilder`](#sqlfunctionbuilder)
+  - [Example](#example)
+  - [Knex Query Builder Example](#knex-query-builder-example)
 - [References](#references)
 - [TODO](#todo)
-
 
 ## Get Started
 
@@ -227,7 +229,6 @@ db('world_countries')
 |---|---|
 |United States|`MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))`|
 
-
 ### `selectIntersection`
 
 ```ts
@@ -334,16 +335,16 @@ db('world_countries')
 db('world_countries')
   .select('country_name')
   .selectLength('country_border', 'border_in_km', 'kilometers');
-  .whereContainsProperly('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
+  .whereContainsProperly('country_border', { lat: -1.474054, lon: 52.795479, radius: '1km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1609.344 AS "border_in_miles"
+//   ST_Length("country_border") * 1000 AS "border_in_km"
 // FROM "world_countries"
-// WHERE ST_ContainsProperly("country_border", ST_Point(-104.128, 39.87));
+// WHERE ST_ContainsProperly("country_border", ST_Buffer('Point(-1.474054, 52.795479)'::geography, 1000));
 ```
 
 |`country_name`|`border_in_km`|
 |---|---|
-|South Africa|4,000|
+|England|2,795|
 
 ### `whereCovers`
 
@@ -515,9 +516,41 @@ db('world_countries')
 
 ## Expressive Shape API
 
-It's easy to define shapes using plain JS objects using the helper method `convertShapeToSql`
+`Knex-Spatial` makes it easy to define shapes **using plain JS objects**.
 
-### Geography Shapes
+All methods that accept a shape argument can be passed a JS object, and it will be converted to the correct SQL syntax.
+
+If you want to stand-alone convert a shape to SQL, you can do so using the helper method `convertShapeToSql`. (**Note:** Advanced use-case.)
+
+### `convertShapeToSql` Usage
+
+```ts
+import { convertShapeToSql } from 'knex-spatial-plugin';
+
+convertShapeToSql({ lat: 39.87, lon: -104.128 });
+// => 'POINT(-104.128 39.87)'::geography
+```
+
+### Shape Object Syntax Examples
+
+```ts
+{ lat: 39.87, lon: -104.128, srid: 4326 }
+// => 'SRID=4326;POINT(-104.128 39.87)'::geography
+{ x: 39.87, y: -104.128 }
+// => 'POINT(-104.128 39.87)'::geometry
+{ lat: 39.87, lon: -104.128, radius: 1000 }
+// => ST_Buffer('POINT(-104.128 39.87)'::geography, 1000)
+{ lat: 39.87, lon: -104.128, radius: '1.5 mile' }
+// => ST_Buffer('POINT(-104.128 39.87)'::geography, 1.5 * 1609.344)
+[{ lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }]
+// => 'LINESTRING(-104.128 39.87, -104.128 39.87)'::geography
+[{ lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }]
+// => 'POLYGON((-104.128 39.87, -104.128 39.87, -104.128 39.87))'::geography
+```
+
+### Geography Shapes in JSON
+
+**Note:** For _geometry_ shapes, use the `x` & `y` properties instead of `lat` & `lon` (as with _geography_.)
 
 - `POINT`: `{ lat: number, lon: number }`
 - `CIRCLE`: `{ lat: number, lon: number, radius: number }`
@@ -526,29 +559,11 @@ It's easy to define shapes using plain JS objects using the helper method `conve
 - `MULTIPOLYGON`: `[ [{ lat: number, lon: number }, ...], ...]` (array of polygons)
 - `MULTILINE`: `[ [{ lat: number, lon: number }, ...], ...]` (array of lines)
 
-### Geometry Shapes
+## SQL Function Syntax Builder API
 
-- `POINT`: `{ x: number, y: number }`
-- `CIRCLE`: `{ x: number, y: number, radius: number }`
-- `LINE`: `[{ x: number, y: number }, ...]` (2+ points, cannot begin & end with the same point)
-- `POLYGON`: `[{ x: number, y: number }, ...]` (first & last point must be the same)
-- `MULTIPOLYGON`: `[ [{ x: number, y: number }, ...], ...]` (array of polygons)
-- `MULTILINE`: `[ [{ x: number, y: number }, ...], ...]` (array of lines)
+`Knex-Spatial` provides a powerful SQL syntax builder API. It's designed to keep ORM code as simple & similar to SQL as possible.
 
-### Examples
-
-```ts
-import { convertShapeToSql } from 'knex-spatial-plugin';
-
-convertShapeToSql({ lat: 39.87, lon: -104.128 }); // => 'POINT(-104.128, 39.87)'::geography
-convertShapeToSql({ lat: 39.87, lon: -104.128, srid: 4326 }); // => 'SRID=4326;POINT(-104.128, 39.87)'::geography
-convertShapeToSql({ x: 39.87, y: -104.128 }); // => 'POINT(-104.128, 39.87)'::geometry
-convertShapeToSql({ lat: 39.87, lon: -104.128, radius: 1000 }); // => ST_Buffer('POINT(-104.128, 39.87)'::geography, 1000)
-
-convertShapeToSql([{ lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }]); // => 'LINESTRING(-104.128 39.87, -104.128 39.87)'::geography
-```
-
-## Powerful Syntax Builder API
+### `sqlFunctionBuilder`
 
 - Supports any form of SQL Function.
 - Supports aggregate functions like `Count()`, `Min()`, and `Sum()`.
@@ -559,25 +574,85 @@ convertShapeToSql([{ lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }]
   - `builder('ST_Length').arg('a_line_string').unit('acres')` => `ST_Length('a_line_string') / 4046.86`
 - Auto-magically converts JS objects into WKT (Well-Known Text) strings. `{x: 1, y: 2}` => `POINT(1 2)`
 
+### Example
+
 ```ts
 import {sqlFunctionBuilder} from 'knex-spatial-plugin';
 
-const builder = sqlFunctionBuilder(db);
+const sqlFn = sqlFunctionBuilder(db);
 
-builder('ST_Distance')
+sqlFn('ST_Distance')
   .arg('point')
   .arg({lat: 39.87, lon: -104.128})
   .alias('distance')
   .build();
-// => ST_Distance("point", ST_Point(-104.128, 39.87)) AS "distance"
+// => ST_Distance("point", 'Point(-104.128 39.87)'::geography) AS "distance"
 
-builder('ST_DWithin')
+sqlFn('ST_DWithin')
   .arg('polygon_column')
   .arg({lat: 39.87, lon: -104.128})
   .arg('5 miles')
-  .build();
-// => ST_DWithin("polygon_column", ST_Point(-104.128, 39.87), 8046.72)
+  .toString(); // Alias for .build()
+// => ST_DWithin("polygon_column", 'Point(-104.128 39.87)'::geography, 5 * 1609.344)
 ```
+
+### Knex Query Builder Example
+
+Use the `sqlFunctionBuilder`'s native `Knex.Raw` support to easily build complex SQL expressions:
+
+```ts
+db('locations')
+  .select('name')
+  .select(sqlFn('ST_Distance')
+    .arg('location')
+    .arg({lat: 39.87, lon: -104.128})
+    .alias('distance')
+    .unit('miles')
+    .toRaw())
+  .where(sqlFn('ST_DWithin')
+    .arg('location')
+    .arg({lat: 39.87, lon: -104.128})
+    .arg('65 miles')
+    .toRaw())
+  .orderBy('distance');
+// SELECT "name",
+//   ST_Distance("location", 'Point(-104.128 39.87)'::geography) * 1609.344 AS "distance"
+// FROM "locations"
+// WHERE ST_DWithin("location", 'Point(-104.128 39.87)'::geography, 5 * 1609.344)
+// ORDER BY "distance" ASC
+```
+
+|`name`|`distance`|
+|---|---|
+|Denver|0|
+|Boulder|38.5|
+|Colorado Springs|60.5|
+
+```ts
+db('locations')
+  .select('name')
+  .select(sqlFn('ST_Y')
+    .arg('location')
+    .alias('latY')
+    .toRaw())
+  .select(sqlFn('ST_X')
+    .arg('location')
+    .alias('lonX')
+    .toRaw())
+// SELECT "name",
+//   ST_Y("location") AS "latY",
+//   ST_X("location") AS "lonX"
+// FROM "locations";
+```
+
+|`name`|`latY`|`lonX`|
+|---|---|---|
+|Denver|39.87|-104.128|
+|Las Vegas|36.17|-115.14|
+|Johannesburg|-26.2041|28.0473|
+|Dublin|53.3498|-6.2603|
+|London|51.5074|-0.1278|
+|D.C.|38.9072|-77.0369|
 
 See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 
@@ -589,6 +664,7 @@ See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 ## TODO
 
 - [ ] Add Schema Builder methods
+- [ ] Convert 'legacy' syntax builder code to use `sqlFunctionBuilder`.
 - [x] Add tests
 - [x] Add more methods.
 - [x] Add more docs

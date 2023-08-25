@@ -22,13 +22,15 @@ describe('sqlFunctionBuilder: Core Methods', () => {
   });
 
   it('should build a function with a unit', () => {
-    const fn = builder('ST_Distance')
+    const rawDistance = builder('ST_Distance')
       .arg('point_a')
       .arg('point_b')
       .unit('miles')
-      .build();
-
-    expect(fn).toBe('ST_Distance(`point_a`, `point_b`) / 1609.344');
+      .alias('distance')
+      .toRaw();
+    const q = db('table').select(rawDistance).where('id', 1);
+    const sql = 'select ST_Distance(`point_a`, `point_b`) / 1609.344 AS `distance` from `table` where `id` = ?';
+    expect(q.toSQL().sql).toBe(sql);
   });
 
   it('should build a function with a unit', () => {
@@ -36,7 +38,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .arg('point_a')
       .arg('point_b')
       .unit('miles')
-      .build();
+      .toString();
 
     expect(fn).toBe('ST_Distance(`point_a`, `point_b`) / 1609.344');
   });
