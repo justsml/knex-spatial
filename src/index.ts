@@ -5,6 +5,8 @@ import {
   isValidShape,
   parseShapeOrColumnToSafeSql,
 } from './utils/shapeUtils';
+import sqlFunctionBuilder from './utils/functionBuilder';
+import { metersToUnitMathLiteral } from './utils/units';
 
 // Re-export helpers
 export { convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
@@ -205,19 +207,14 @@ function selectDistance<
   columnAlias = 'distance',
   useUnits: Unit = 'miles',
 ): Knex.QueryBuilder<TRecord, TResult> {
-  const mathModifier = useUnits === 'miles' ? ' / 1609.34' : 
-    useUnits === 'hectares' ? ' / 10000' :
-    useUnits === 'kilometers' ? ' / 1000' :
-    useUnits === 'acres' ? ' / 4046.86' : '';
+  const mathModifier = metersToUnitMathLiteral(useUnits);
 
   const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
   const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
   if (!lhs || !rhs) return this;
 
   return this.select(
-    _db.raw(`ST_Distance(${lhs}, ${rhs})${mathModifier} AS ??`, [
-      columnAlias,
-    ]),
+    _db.raw(`ST_Distance(${lhs}, ${rhs})${mathModifier} AS ??`, [columnAlias]),
   );
 }
 
@@ -233,16 +230,7 @@ function whereDistanceWithin<
 ) {
   const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
   const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
-  const mathModifier =
-    useUnits === 'miles'
-      ? ' / 1609.34'
-      : useUnits === 'hectares'
-      ? ' / 10000'
-      : useUnits === 'kilometers'
-      ? ' / 1000'
-      : useUnits === 'acres'
-      ? ' / 4046.86'
-      : '';
+  const mathModifier = metersToUnitMathLiteral(useUnits);
   if (!lhs || !rhs) return this;
 
   if (!distance || Number.isNaN(distance))
@@ -320,32 +308,23 @@ const whereRelateMatch = wherePredicateWrapper('ST_RelateMatch');
 function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   this: Knex.QueryBuilder<TRecord, TResult>,
   columnOrShape: string | Shape,
-  distance: number,
+  distance: number | string,
   useUnits: Unit = 'miles',
   columnAlias = 'buffer',
-  
 ): Knex.QueryBuilder<TRecord, TResult> {
-  if (Number.isNaN(distance) || distance == null) return this;
-  if (typeof columnOrShape === 'string') {
-    return this.select(
-      _db.raw(`ST_Buffer(??, ${Number(distance)}) as ??`, [
-        columnOrShape,
-        columnAlias,
-      ]),
-    );
-  }
-  // console.log('selectBuffer', columnOrShape, distance, columnAlias);
-  if (isValidShape(columnOrShape)) {
-    return this.select(
-      _db.raw(
-        `ST_Buffer(${convertShapeToSql(columnOrShape)}, ${Number(
-          distance,
-        )}) as ??`,
-        [columnAlias],
-      ),
-    );
-  }
-  return this;
+  if (distance === undefined) return this;
+  if (Number.isNaN(distance) || distance == null)
+    throw new Error('selectBuffer: Missing distance');
+  const builder = sqlFunctionBuilder(_db);
+  const fnExpr = builder('ST_Buffer')
+    .arg(columnOrShape)
+    .arg(distance, useUnits)
+    .unit(useUnits)
+    .alias(columnAlias);
+
+  return this.select(_db.raw(fnExpr.build()));
+
+  // return this;
 }
 
 // function selectIntersection<

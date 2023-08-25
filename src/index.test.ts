@@ -90,7 +90,7 @@ describe('selectBuffer', () => {
   it('should return buffer on shape', () => {
     const query = db
       .from('locations')
-      .selectBuffer({ lat: 39.87, lon: -104.128 }, 1_000)
+      .selectBuffer({ lat: 39.87, lon: -104.128 }, 1_000, 'meters')
       .toSQL()
       .toNative();
 
@@ -110,7 +110,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 16093.4) AS \`buffer\`
+      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 10 * 1609.344) AS \`buffer\`
       FROM \`locations\``,
     );
   });
@@ -118,13 +118,27 @@ describe('selectBuffer', () => {
   it('should return buffer on column', () => {
     const query = db
       .from('locations')
-      .selectBuffer('location', 1_000)
+      .selectBuffer('location', 1_000, 'meters')
       .toSQL()
       .toNative();
 
     expect(fmt(query.sql)).toBe(
       dedent`
       SELECT ST_Buffer(\`location\`, 1000) AS \`buffer\`
+      FROM \`locations\``,
+    );
+  });
+
+  it('should return buffer in miles', () => {
+    const query = db
+      .from('locations')
+      .selectBuffer('location', 1_000, 'miles')
+      .toSQL()
+      .toNative();
+
+    expect(fmt(query.sql)).toBe(
+      dedent`
+      SELECT ST_Buffer(\`location\`, 1000 * 1609.344) AS \`buffer\`
       FROM \`locations\``,
     );
   });
