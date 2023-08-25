@@ -6,7 +6,7 @@ import {
   parseShapeOrColumnToSafeSql,
 } from './utils/shapeUtils';
 import sqlFunctionBuilder from './utils/functionBuilder';
-import { metersToUnitMathLiteral } from './utils/units';
+import { metersToUnitMathLiteral, unitToMetersMathLiteral } from './utils/units';
 
 // Re-export helpers
 export { convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
@@ -88,16 +88,7 @@ const selectBinaryFunctionColumnWrapper = (
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
     const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
     if (!lhs || !rhs) return this;
-    const mathModifier =
-      useUnits === 'miles'
-        ? ' * 1609.34'
-        : useUnits === 'kilometers'
-        ? ' * 1000'
-        : useUnits === 'hectares'
-        ? ' * 10000'
-        : useUnits === 'acres'
-        ? ' * 4046.86'
-        : '';
+    const mathModifier = unitToMetersMathLiteral(useUnits);
     return this.select(
       _db.raw(`${methodName}(${lhs}, ${rhs})${mathModifier} as ??`, [
         columnAlias,
@@ -121,20 +112,11 @@ const selectUnaryFunctionColumnWrapper = (
     this: Knex.QueryBuilder<TRecord, TResult>,
     shapeOrColumn: ShapeOrColumn,
     columnAlias = defaultAlias,
-    useUnits: Unit | 'NA' = 'NA',
+    useUnits: Unit = 'meters',
   ): Knex.QueryBuilder<TRecord, TResult> {
     const lhs = parseShapeOrColumnToSafeSql(shapeOrColumn);
     if (!lhs) return this;
-    const mathModifier =
-      useUnits === 'miles'
-        ? ' * 1609.34'
-        : useUnits === 'kilometers'
-        ? ' * 1000'
-        : useUnits === 'hectares'
-        ? ' * 10000'
-        : useUnits === 'acres'
-        ? ' * 4046.86'
-        : '';
+    const mathModifier = unitToMetersMathLiteral(useUnits);
 
     return this.select(
       _db.raw(`${methodName}(${lhs})${mathModifier} as ??`, [columnAlias]),
@@ -179,7 +161,7 @@ const whereConditionalWrapper = (methodName: string) =>
     rightShapeOrColumn: ShapeOrColumn,
     operator: keyof typeof Operators,
     distance?: number,
-    useUnits: Unit = 'miles',
+    useUnits: Unit = 'meters',
   ): Knex.QueryBuilder<TRecord, TResult> {
     if (!Operators[operator]) throw new Error(`Invalid operator: ${operator}`);
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
@@ -190,7 +172,7 @@ const whereConditionalWrapper = (methodName: string) =>
       throw new Error(
         'where: ' + methodName + ': Missing expression value (distance)',
       );
-    if (useUnits === 'meters') distance = distance * 1609.34;
+    // if (useUnits === 'meters') distance = distance * 1609.34;
 
     return this.whereRaw(
       `${methodName}(${lhs}, ${rhs}) ${operator} ${Number(distance)}`,
@@ -205,7 +187,7 @@ function selectDistance<
   leftShapeOrColumn: ShapeOrColumn,
   rightShapeOrColumn: ShapeOrColumn,
   columnAlias = 'distance',
-  useUnits: Unit = 'miles',
+  useUnits: Unit = 'meters',
 ): Knex.QueryBuilder<TRecord, TResult> {
   const mathModifier = metersToUnitMathLiteral(useUnits);
 
@@ -226,7 +208,7 @@ function whereDistanceWithin<
   leftShapeOrColumn: ShapeOrColumn,
   rightShapeOrColumn: ShapeOrColumn,
   distance?: number,
-  useUnits: Unit = 'miles',
+  useUnits: Unit = 'meters',
 ) {
   const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
   const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
@@ -309,7 +291,7 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   this: Knex.QueryBuilder<TRecord, TResult>,
   columnOrShape: string | Shape,
   distance: number | string,
-  useUnits: Unit = 'miles',
+  useUnits: Unit = 'meters',
   columnAlias = 'buffer',
 ): Knex.QueryBuilder<TRecord, TResult> {
   if (distance === undefined) return this;
@@ -318,7 +300,7 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   const builder = sqlFunctionBuilder(_db);
   const fnExpr = builder('ST_Buffer')
     .arg(columnOrShape)
-    .arg(distance, useUnits)
+    .arg(distance)
     .unit(useUnits)
     .alias(columnAlias);
 

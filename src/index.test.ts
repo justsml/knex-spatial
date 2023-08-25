@@ -25,7 +25,7 @@ describe('selectDistance', () => {
       dedent`
       SELECT \`id\`,
         \`name\`,
-        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS \`distance\`
+        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
       FROM \`locations\``,
     );
   });
@@ -58,7 +58,7 @@ describe('selectDistance', () => {
       dedent`
       SELECT \`id\`,
         \`name\`,
-        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.34 AS \`distance\`
+        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -132,13 +132,13 @@ describe('selectBuffer', () => {
   it('should return buffer in miles', () => {
     const query = db
       .from('locations')
-      .selectBuffer('location', 1_000, 'miles')
+      .selectBuffer('location', '1000 miles', 'miles')
       .toSQL()
       .toNative();
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer(\`location\`, 1000 * 1609.344) AS \`buffer\`
+      SELECT ST_Buffer(\`location\`, 1000) / 1609.344 AS \`buffer\`
       FROM \`locations\``,
     );
   });
@@ -194,7 +194,7 @@ describe('whereDistance', () => {
         ST_Distance(
           \`location\`,
           ST_Buffer('POINT(-104.128 39.87)'::geography, 100)
-        ) / 1609.34 AS \`distance\`
+        ) AS \`distance\`
       FROM \`locations\`
       WHERE ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) <= 100
       ORDER BY \`distance\` ASC`,
@@ -213,7 +213,7 @@ describe('whereDistance', () => {
     expect(fmt(query.sql)).toBe(
       dedent`
       SELECT \`id\`,
-        ST_Distance(\`location\`, \`a_point\`) / 1609.34 AS \`distance\`
+        ST_Distance(\`location\`, \`a_point\`) / 1609.344 AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -288,7 +288,7 @@ describe('whereDistance', () => {
       dedent`
       SELECT \`id\`
       FROM \`locations\`
-      WHERE ST_Distance(\`location\`, \`a_point\`) <= 160934
+      WHERE ST_Distance(\`location\`, \`a_point\`) <= 100
       ORDER BY \`distance\` ASC`,
     );
   });

@@ -58,7 +58,7 @@ export function findNearbyLocations({lat, lon}) {
 select
     "id",
     "name",
-    ST_Distance ("location", ST_Point (-104.128, 39.87)) / 1609.34 AS "distance"
+    ST_Distance ("location", ST_Point (-104.128, 39.87)) / 1609.344 AS "distance"
 from
     "locations"
 where
