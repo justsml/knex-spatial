@@ -102,7 +102,11 @@ id  name    distance
 
 ### `whereDistance` & `whereDistanceWithin`
 
-Include only results within a given radius in meters.
+```tsv
+id  name    distance
+1   Denver  0
+2   Boulder 38.5
+```
 
 Uses the `ST_Distance` & `ST_DWithin` function.
 
@@ -116,14 +120,6 @@ export function findNearbyLocations({lat, lon}) {
     .whereDistanceWithin('location', { lat, lon, radius: 10000 })
 }
 ```
-
-<!-- 
-selectArea
-selectCentroid
-selectConvexHull
-selectEnvelope
-selectLength
--->
 
 ### `selectArea`
 
