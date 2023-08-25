@@ -82,7 +82,6 @@ export function findNearbyLocations({lat, lon}) {
   return db('locations')
     .select('id', 'name')
     .selectDistance('location', { lat, lon })
-    .where('distance', '<', 10000)
     .orderBy('distance');
 }
 ```
@@ -146,7 +145,7 @@ db('world_countries')
   .select('country_name')
   .selectArea('country_border', 'area_in_km2', 'kilometers');
 // SELECT "country_name",
-//   ST_Area("country_border") * 1000 AS "area_in_km2"
+//   ST_Area("country_border") / 1000 AS "area_in_km2"
 // FROM "world_countries";
 ```
 
@@ -164,7 +163,7 @@ db('world_countries')
   .orderBy('area_in_miles', 'desc');
 
 // SELECT "country_name",
-//   ST_Area("country_border") * 1609.344 AS "area_in_miles"
+//   ST_Area("country_border") / 1609.344 AS "area_in_miles"
 // FROM "world_countries"
 // ORDER BY "area_in_miles" DESC;
 ```
@@ -220,7 +219,7 @@ db('world_countries')
   .selectDifference('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'difference')
   .where({ country_name: 'United States' });
 // SELECT "country_name",
-//   ST_Difference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 1609.344 * 10)) AS "difference"
+//   ST_Difference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "difference"
 // FROM "world_countries"
 // WHERE "country_name" = 'United States';
 ```
@@ -237,7 +236,7 @@ db('world_countries')
   .selectIntersection('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'intersection')
   .where({ country_name: 'United States' });
 // SELECT "country_name",
-//   ST_Intersection("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 1609.344 * 10)) AS "intersection"
+//   ST_Intersection("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "intersection"
 // FROM "world_countries"
 // WHERE "country_name" = 'United States';
 ```
@@ -271,7 +270,7 @@ db('world_countries')
   .select('country_name')
   .selectLength('country_border', 'border_in_miles', 'miles');
 // SELECT "country_name",
-//   ST_Length("country_border") * 1609.344 AS "border_in_miles"
+//   ST_Length("country_border") / 1609.344 AS "border_in_miles"
 // FROM "world_countries";
 ```
 
@@ -290,7 +289,7 @@ db('world_countries')
   .selectSymDifference('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'sym_difference')
   .where({ country_name: 'United States' });
 // SELECT "country_name",
-//   ST_SymDifference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 1609.344 * 10)) AS "sym_difference"
+//   ST_SymDifference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "sym_difference"
 // FROM "world_countries"
 // WHERE "country_name" = 'United States';
 ```
@@ -320,7 +319,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_miles', 'miles');
   .whereContains('country_border', { lat: 39.87, lon: -104.128 })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1609.344 AS "border_in_miles"
+//   ST_Length("country_border") / 1609.344 AS "border_in_miles"
 // FROM "world_countries"
 // WHERE ST_Contains("country_border", ST_Point(-104.128, 39.87));
 ```
@@ -337,7 +336,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereContainsProperly('country_border', { lat: -1.474054, lon: 52.795479, radius: '1km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_ContainsProperly("country_border", ST_Buffer('Point(-1.474054, 52.795479)'::geography, 1000));
 ```
@@ -354,7 +353,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereCovers('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Covers("country_border", ST_Point(-104.128, 39.87));
 ```
@@ -371,7 +370,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereCoveredBy('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_CoveredBy("country_border", ST_Point(-104.128, 39.87));
 ```
@@ -388,7 +387,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereCrosses('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Crosses("country_border", ST_Point(-104.128, 39.87));
 ```
@@ -405,7 +404,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereDisjoint('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Disjoint("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
@@ -424,7 +423,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereEquals('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Equals("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
@@ -441,7 +440,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereIntersects('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Intersects("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
@@ -458,7 +457,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereOverlaps('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Overlaps("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
@@ -490,7 +489,7 @@ db('world_countries')
   .selectLength('country_border', 'border_in_km', 'kilometers');
   .whereTouches('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' })
 // SELECT "country_name",
-//   ST_Length("country_border") * 1000 AS "border_in_km"
+//   ST_Length("country_border") / 1000 AS "border_in_km"
 // FROM "world_countries"
 // WHERE ST_Touches("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
@@ -616,7 +615,7 @@ db('locations')
     .toRaw())
   .orderBy('distance');
 // SELECT "name",
-//   ST_Distance("location", 'Point(-104.128 39.87)'::geography) * 1609.344 AS "distance"
+//   ST_Distance("location", 'Point(-104.128 39.87)'::geography) / 1609.344 AS "distance"
 // FROM "locations"
 // WHERE ST_DWithin("location", 'Point(-104.128 39.87)'::geography, 5 * 1609.344)
 // ORDER BY "distance" ASC
