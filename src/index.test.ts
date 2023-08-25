@@ -473,6 +473,21 @@ describe('selectArea', () => {
       ST_Area(\`location\`) AS \`area\`
     FROM \`locations\``);
   });
+
+  it('should return area w/ column', () => {
+    const query = db
+      .from('locations')
+      .select('id')
+      // @ts-expect-error
+      .selectArea({radius: undefined})
+      .toSQL()
+      .toNative();
+      
+    expect(fmt(query.sql)).toBe(dedent`
+    SELECT \`id\`
+    FROM \`locations\``);
+  });
+
 });
 
 describe('whereContains', () => {
@@ -508,5 +523,17 @@ describe('whereContains', () => {
     expect(fmt(query.sql)).toBe(dedent`
     SELECT \`id\`
     FROM \`locations\``);
+  });
+});
+
+describe('selectBuffer', () => {
+  it('should throw in invalid distance', () => {
+    expect(() => db
+      .from('locations')
+      .select('id')
+      .selectBuffer('location', NaN)
+      .toSQL()
+      .toNative()
+    ).toThrow();
   });
 });

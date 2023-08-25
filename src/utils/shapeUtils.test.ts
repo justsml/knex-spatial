@@ -11,6 +11,9 @@ import {
   isCircle,
   isValidGeometry,
   isValidShape,
+  isPointUndefined,
+  shapeContainsUndefined,
+  parseShapeOrColumnToSafeSql,
 } from './shapeUtils';
 
 /* Geography-based fixtures */
@@ -138,6 +141,36 @@ describe('handles invalid input', () => {
   })
 });
 
+describe('parseShapeOrColumnToSafeSql', () => {
+  it('should parse a boolean expression', () => {
+    expect(parseShapeOrColumnToSafeSql(true)).toEqual('true');
+  });
+});
+
+describe('isPointUndefined', () => {
+  it('should detect undefined values', () => {
+    expect(isPointUndefined([undefined])).toEqual(false);
+    expect(isPointUndefined({ lat: undefined, lon: 1 })).toEqual(true);
+    expect(isPointUndefined({ lat: 1, lon: undefined })).toEqual(true);
+    expect(isPointUndefined({ lat: 1, lon: 1 })).toEqual(false);
+    expect(isPointUndefined({ y: undefined, x: 1 })).toEqual(true);
+    expect(isPointUndefined({ y: 1, x: undefined })).toEqual(true);
+    expect(isPointUndefined({ y: 1, x: 1 })).toEqual(false);
+    expect(isPointUndefined({ radius: undefined})).toEqual(true);
+  });
+});
+
+// shapeContainsUndefined
+describe('shapeContainsUndefined', () => {
+  it('should detect undefined values', () => {
+    expect(shapeContainsUndefined([undefined])).toEqual(false);
+    expect(shapeContainsUndefined({ lat: undefined, lon: 1 })).toEqual(true);
+    expect(shapeContainsUndefined({ lat: 1, lon: undefined })).toEqual(true);
+    expect(shapeContainsUndefined({ lat: 1, lon: 1 })).toEqual(false);
+    expect(shapeContainsUndefined([{ lat: 1, lon: 1 }, { lat: -1, lon: -1 }, { lat: 1, lon: 1 }])).toEqual(false);
+    expect(shapeContainsUndefined([[{ lat: 1, lon: 1 }], { lat: -1, lon: -1 }, { lat: 1, lon: 1 }])).toEqual(false);
+  });
+});
 
 describe('convertShapeToSqlWKT', () => {
 

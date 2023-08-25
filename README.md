@@ -94,7 +94,7 @@ export function findNearbyLocations({lat, lon}) {
 
 ## Expressive Shape API
 
-It's easy to define shapes using plain JS objects using `Knex Spatial` helper method `convertShapeToSql`
+It's easy to define shapes using plain JS objects using the helper method `convertShapeToSql`
 
 ### Geography Shapes
 
@@ -114,6 +114,51 @@ It's easy to define shapes using plain JS objects using `Knex Spatial` helper me
 - `MULTIPOLYGON`: `[ [{ x: number, y: number }, ...], ...]` (array of polygons)
 - `MULTILINE`: `[ [{ x: number, y: number }, ...], ...]` (array of lines)
 
+### Examples
+
+```ts
+import { convertShapeToSql } from 'knex-spatial-plugin';
+
+convertShapeToSql({ lat: 39.87, lon: -104.128 }); // => 'POINT(-104.128, 39.87)'::geography
+convertShapeToSql({ lat: 39.87, lon: -104.128, srid: 4326 }); // => 'SRID=4326;POINT(-104.128, 39.87)'::geography
+convertShapeToSql({ x: 39.87, y: -104.128 }); // => 'POINT(-104.128, 39.87)'::geometry
+convertShapeToSql({ lat: 39.87, lon: -104.128, radius: 1000 }); // => ST_Buffer('POINT(-104.128, 39.87)'::geography, 1000)
+
+convertShapeToSql([{ lat: 39.87, lon: -104.128 }, { lat: 39.87, lon: -104.128 }]); // => 'LINESTRING(-104.128 39.87, -104.128 39.87)'::geography
+```
+
+## Powerful Syntax Builder API
+
+- Supports any form of SQL Function.
+- Supports aggregate functions like `Count()`, `Min()`, and `Sum()`.
+  - `builder('COUNT').arg('id').wrap('min')` => `min(COUNT('id'))`
+- Auto-magically converts natural language measurements into the correct unit.
+  - Works for both input values (Desired unit -> Base unit) and for output expressions (Base unit -> Desired unit.)
+  - `5 miles` => `8046.72` (meters)
+  - `builder('ST_Length').arg('a_line_string').unit('acres')` => `ST_Length('a_line_string') / 4046.86`
+- Auto-magically converts JS objects into WKT (Well-Known Text) strings. `{x: 1, y: 2}` => `POINT(1 2)`
+
+```ts
+import {sqlFunctionBuilder} from 'knex-spatial-plugin';
+
+const builder = sqlFunctionBuilder(db);
+
+builder('ST_Distance')
+  .arg('point')
+  .arg({lat: 39.87, lon: -104.128})
+  .alias('distance')
+  .build();
+// => ST_Distance("point", ST_Point(-104.128, 39.87)) AS "distance"
+
+builder('ST_DWithin')
+  .arg('polygon_column')
+  .arg({lat: 39.87, lon: -104.128})
+  .arg('5 miles')
+  .build();
+// => ST_DWithin("polygon_column", ST_Point(-104.128, 39.87), 8046.72)
+```
+
+See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 
 ## References
 
@@ -122,9 +167,9 @@ It's easy to define shapes using plain JS objects using `Knex Spatial` helper me
 
 ## TODO
 
-- [ ] Add tests
 - [ ] Add Schema Builder methods
-- [ ] Add more methods
-- [ ] Add more docs
-- [ ] Add more examples
+- [x] Add tests
+- [x] Add more methods.
+- [x] Add more docs
+- [x] Add more examples
 - [x] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)

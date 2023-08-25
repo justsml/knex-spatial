@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
 import { isValidShape, parseShapeOrColumnToSafeSql, shapeContainsUndefined } from './shapeUtils';
-import { hasUnits, metersToUnitMathLiteral, parseHumanNumber, unitToMetersMathLiteral } from './units';
+import { hasUnits, metersToUnitMathLiteral, parseHumanMeasurement, unitToMetersMathLiteral } from './units';
 import { safeColumn } from './escaping';
 
 export default function sqlFunctionBuilder(db: Knex) {
@@ -31,11 +31,6 @@ class SqlFunctionBuilder {
     this._aggregateFns = [];
   }
 
-  /** Updates _preventBuild if we don't have minimum values */
-  _checkConfig() {
-    if (!this._name || this._name.length <= 0) this._preventBuild = true;
-    if (!this._arguments || this._arguments.length <= 0) this._preventBuild = true;
-  }
   name(_name: string) {
     this._name = _name;
     return this;
@@ -43,10 +38,11 @@ class SqlFunctionBuilder {
 
   // arg(_arg: ShapeColumnOrLiteral): ThisType<SqlFunctionBuilder>;
   arg(_arg: ShapeColumnOrLiteral, unit: undefined | Unit = undefined): SqlFunctionBuilder {
-    if (shapeContainsUndefined(_arg)) {
+    if (shapeContainsUndefined(_arg) || _arg === undefined) {
       this._preventBuild = true;
       return this;
     }
+
     const isShape = isValidShape(_arg);
     let sqlExpr = parseShapeOrColumnToSafeSql(_arg);
 
@@ -66,7 +62,7 @@ class SqlFunctionBuilder {
       if (typeof _arg === 'string') {
         const isHumanReadableUnit = hasUnits(_arg);
         if (isHumanReadableUnit) {
-          const {value, unit} = parseHumanNumber(_arg);
+          const {value, unit} = parseHumanMeasurement(_arg);
           this._arguments.push(`${value}${unitToMetersMathLiteral(unit)}`);
           return this;
         }
@@ -97,11 +93,11 @@ class SqlFunctionBuilder {
   build() {
     if (this._preventBuild) return '';
     const { _db, _name, _arguments, _unit, _alias, _aggregateFns } = this;
-    if (_arguments[0] === undefined) return ''; // throw new Error('Invalid argument provided to SqlFunctionBuilder');
     const fn = _db.raw(`${_name}(${_arguments.join(', ')})`);
     const fnWithUnit = `${fn}${metersToUnitMathLiteral(_unit)}`;
-    const fnColumnExpression = _alias ? `${fnWithUnit} AS ${safeColumn(_alias)}` : fnWithUnit;
-    return _aggregateFns.reduce((acc, fn) => `${fn}(${acc})`, fnColumnExpression);
+    const aggFns = _aggregateFns.reduce((acc, fn) => `${fn}(${acc})`, fnWithUnit)
+    const fnColumnExpression = _alias ? `${aggFns} AS ${safeColumn(_alias)}` : fnWithUnit;
+    return fnColumnExpression;
   }
 }
 

@@ -83,7 +83,7 @@ const selectBinaryFunctionColumnWrapper = (
     leftShapeOrColumn: ShapeOrColumn,
     rightShapeOrColumn: ShapeOrColumn,
     columnAlias = defaultAlias,
-    useUnits: Unit | 'NA' = 'NA',
+    useUnits: Unit = 'meters',
   ): Knex.QueryBuilder<TRecord, TResult> {
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
     const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
