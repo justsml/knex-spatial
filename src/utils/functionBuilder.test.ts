@@ -8,7 +8,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
   it('should build a function', () => {
     const fn = builder('ST_Distance').arg('a').arg('b').build();
 
-    expect(fn).toBe('ST_Distance(`a`, `b`)');
+    expect(fn).toBe('ST_Distance("a", "b")');
   });
 
   it('should build a function with an alias', () => {
@@ -18,7 +18,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Distance(`a`, `b`) AS `distance`');
+    expect(fn).toBe('ST_Distance("a", "b") AS \'distance\'');
   });
 
   it('should build a function with a unit', () => {
@@ -29,7 +29,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .toRaw();
     const q = db('table').select(rawDistance).where('id', 1);
-    const sql = 'select ST_Distance(`point_a`, `point_b`) / 1609.344 AS `distance` from `table` where `id` = ?';
+    const sql = 'select ST_Distance("point_a", "point_b") / 1609.344 AS \'distance\' from `table` where `id` = ?';
     expect(q.toSQL().sql).toBe(sql);
   });
 
@@ -40,7 +40,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .unit('miles')
       .toString();
 
-    expect(fn).toBe('ST_Distance(`point_a`, `point_b`) / 1609.344');
+    expect(fn).toBe('ST_Distance("point_a", "point_b") / 1609.344');
   });
 
   it('should build a function with a unit and an alias', () => {
@@ -51,7 +51,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Distance(`point_a`, `point_b`) / 1609.344 AS \`distance\`');
+    expect(fn).toBe('ST_Distance("point_a", "point_b") / 1609.344 AS \'distance\'');
   });
 
   it('should support literal arg "5 miles"', () => {
@@ -62,7 +62,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 1609.344) / 1609.344 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 1609.344) / 1609.344 AS \'distance\'');
   });
 
   it('should support literal arg "5m" (meters)', () => {
@@ -73,7 +73,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) AS \'distance\'');
   });
 
   it('should support literal arg "5km" (kilometers)', () => {
@@ -84,7 +84,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 1000) / 1000 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 1000) / 1000 AS \'distance\'');
   });
 
   it('should support literal arg "5ft" (feet)', () => {
@@ -95,7 +95,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 0.3048) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 0.3048) AS \'distance\'');
   });
 
   it('should support literal arg "5yd" (yards)', () => {
@@ -106,7 +106,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 0.9144) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 0.9144) AS \'distance\'');
   });
 
   it('should support literal arg "5in" (inches)', () => {
@@ -117,7 +117,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 0.0254) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 0.0254) AS \'distance\'');
   });
 
   it('should support literal arg "5mi" (miles)', () => {
@@ -128,7 +128,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 1609.344) / 1609.344 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 1609.344) / 1609.344 AS \'distance\'');
   });
 
   it('should support literal arg "5ha" (hectares)', () => {
@@ -139,7 +139,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 10000) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 10000) AS \'distance\'');
   });
 
   it('should support literal arg "5 hectares"', () => {
@@ -150,7 +150,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5 * 10000) AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5 * 10000) AS \'distance\'');
   });
   
   it('should support literal arg "5ac" (acres)', () => {
@@ -161,7 +161,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`p`, 5 * 4046.8564224) AS `distance`');
+    expect(fn).toBe('ST_Buffer("p", 5 * 4046.8564224) AS \'distance\'');
   });
   
   it('should support literal arg "5 acre"', () => {
@@ -171,7 +171,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`p`, 5 * 4046.8564224) AS `distance`');
+    expect(fn).toBe('ST_Buffer("p", 5 * 4046.8564224) AS \'distance\'');
   });
 
   it('should support literal arg "5 feet"', () => {
@@ -181,7 +181,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`p`, 5 * 0.3048) AS `distance`');
+    expect(fn).toBe('ST_Buffer("p", 5 * 0.3048) AS \'distance\'');
   });
 
   it('should support literal arg "5 yard"', () => {
@@ -191,7 +191,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`p`, 5 * 0.9144) AS `distance`');
+    expect(fn).toBe('ST_Buffer("p", 5 * 0.9144) AS \'distance\'');
   });
 
   it('should support literal arg "5 inch"', () => {
@@ -201,7 +201,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`p`, 5 * 0.0254) AS `distance`');
+    expect(fn).toBe('ST_Buffer("p", 5 * 0.0254) AS \'distance\'');
   });
 
   it('should support literal Shape: Point', () => {
@@ -212,7 +212,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe("ST_Buffer('POINT(-1 1)'::geography, 250 * 1609.344) AS `distance`");
+    expect(fn).toBe("ST_Buffer('POINT(-1 1)'::geography, 250 * 1609.344) AS \'distance\'");
   });
 
   it('should support unit arg "hectares"', () => {
@@ -223,7 +223,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 10000 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) / 10000 AS \'distance\'');
   });
 
   it('should support unit arg "acres"', () => {
@@ -234,7 +234,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 4046.8564224 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) / 4046.8564224 AS \'distance\'');
   });
 
   it('should support unit arg "feet"', () => {
@@ -245,7 +245,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 0.3048 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) / 0.3048 AS \'distance\'');
   });
 
   it('should support unit arg "yards"', () => {
@@ -256,7 +256,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 0.9144 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) / 0.9144 AS \'distance\'');
   });
 
   it('should support unit arg "inches"', () => {
@@ -267,7 +267,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .alias('distance')
       .build();
 
-    expect(fn).toBe('ST_Buffer(`point_a`, 5) / 0.0254 AS `distance`');
+    expect(fn).toBe('ST_Buffer("point_a", 5) / 0.0254 AS \'distance\'');
   });
 
   it('should throw on invalid unit arg', () => {
@@ -299,7 +299,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .build();
 
     expect(fn).toBe(
-      "FN(`point_a`, 5, 5 * 1609.344, 5 * 1000, 5 * 10000, 5 * 4046.8564224, 5 * 0.0254, 5 * 0.9144, 5 * 0.3048, 'POINT(-1 1)'::geography * 1609.344, `destination` * 1609.344) AS `dist`",
+      "FN(\"point_a\", 5, 5 * 1609.344, 5 * 1000, 5 * 10000, 5 * 4046.8564224, 5 * 0.0254, 5 * 0.9144, 5 * 0.3048, 'POINT(-1 1)'::geography * 1609.344, `destination` * 1609.344) AS 'dist'",
     );
   });
 
@@ -321,7 +321,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .wrap('sum')
       .build();
 
-    expect(fn).toBe('sum(ST_Length(`point_a`)) AS `size`');
+    expect(fn).toBe('sum(ST_Length("point_a")) AS \'size\'');
   });
 
   it('should support aggregate sum(max)', () => {
@@ -332,7 +332,7 @@ describe('sqlFunctionBuilder: Core Methods', () => {
       .wrap('sum')
       .build();
 
-    expect(fn).toBe('sum(max(ST_Length(`point_a`))) AS `size`');
+    expect(fn).toBe('sum(max(ST_Length("point_a"))) AS \'size\'');
   });
 
   it('should handle undefined args', () => {

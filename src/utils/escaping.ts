@@ -1,6 +1,6 @@
 console.warn(`TODO: Make safeSql() more robust!`);
-export const safeSql = (s: string) => s.replace(/[`"']+/gm, '');
-export const safeColumn = (s: string) => '`' + safeSql(s) + '`';
+export const safeSql = (s: string) => s.replace(/[']+/gm, '\'');
+export const safeColumn = (s: string) => `'` + safeSql(s) + `'`;
 
 
 /** Tagged template literal fn */

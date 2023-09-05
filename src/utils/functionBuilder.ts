@@ -92,6 +92,7 @@ class SqlFunctionBuilder {
   build() {
     if (this._preventBuild) return '';
     const { _db, _name, _arguments, _unit, _alias, _aggregateFns } = this;
+    console.log('fn', _name)
     const fn = _db.raw(`${_name}(${_arguments.join(', ')})`);
     const fnWithUnit = `${fn}${metersToUnitMathLiteral(_unit)}`;
     const aggFns = _aggregateFns.reduce((acc, fn) => `${fn}(${acc})`, fnWithUnit)

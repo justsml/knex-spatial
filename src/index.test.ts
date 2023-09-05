@@ -25,7 +25,7 @@ describe('selectDistance', () => {
       dedent`
       SELECT \`id\`,
         \`name\`,
-        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
+        ST_Distance("location", 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
       FROM \`locations\``,
     );
   });
@@ -58,7 +58,7 @@ describe('selectDistance', () => {
       dedent`
       SELECT \`id\`,
         \`name\`,
-        ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
+        ST_Distance("location", 'POINT(-104.128 39.87)'::geography) / 1609.344 AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -79,7 +79,7 @@ describe('selectDistance', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) AS \`distance\`
+      SELECT ST_Distance("location", 'POINT(-104.128 39.87)'::geography) AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -96,7 +96,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS \`buffer\`
+      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS 'buffer'
       FROM \`locations\``,
     );
   });
@@ -113,7 +113,7 @@ describe('selectBuffer', () => {
       SELECT ST_Buffer(
           'POINT(-104.128 39.87)'::geography,
           10 * 1609.344
-        ) AS \`buffer\`
+        ) AS 'buffer'
       FROM \`locations\``,
     );
   });
@@ -127,7 +127,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer(\`location\`, 1000) AS \`buffer\`
+      SELECT ST_Buffer("location", 1000) AS 'buffer'
       FROM \`locations\``,
     );
   });
@@ -141,7 +141,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer(\`location\`, 1000 * 1609.344) / 1609.344 AS \`buffer\`
+      SELECT ST_Buffer("location", 1000 * 1609.344) / 1609.344 AS 'buffer'
       FROM \`locations\``,
     );
   });
@@ -195,11 +195,11 @@ describe('whereDistance', () => {
       SELECT \`id\`,
         \`name\`,
         ST_Distance(
-          \`location\`,
+          "location",
           ST_Buffer('POINT(-104.128 39.87)'::geography, 100)
         ) AS \`distance\`
       FROM \`locations\`
-      WHERE ST_Distance(\`location\`, 'POINT(-104.128 39.87)'::geography) <= 100
+      WHERE ST_Distance("location", 'POINT(-104.128 39.87)'::geography) <= 100
       ORDER BY \`distance\` ASC`,
     );
   });
@@ -216,7 +216,7 @@ describe('whereDistance', () => {
     expect(fmt(query.sql)).toBe(
       dedent`
       SELECT \`id\`,
-        ST_Distance(\`location\`, \`a_point\`) / 1609.344 AS \`distance\`
+        ST_Distance("location", "a_point") / 1609.344 AS \`distance\`
       FROM \`locations\`
       ORDER BY \`distance\` ASC`,
     );
@@ -291,7 +291,7 @@ describe('whereDistance', () => {
       dedent`
       SELECT \`id\`
       FROM \`locations\`
-      WHERE ST_Distance(\`location\`, \`a_point\`) <= 100
+      WHERE ST_Distance("location", "a_point") <= 100
       ORDER BY \`distance\` ASC`,
     );
   });
@@ -313,12 +313,12 @@ describe('whereDistanceWithin', () => {
       SELECT \`id\`,
         \`name\`,
         ST_Distance(
-          \`location\`,
+          "location",
           ST_Buffer('POINT(-104.128 39.87)'::geography, 100)
         ) AS \`distance\`
       FROM \`locations\`
       WHERE ST_DWithin(
-          \`location\`,
+          "location",
           'POINT(-104.128 39.87)'::geography,
           100
         )
@@ -384,7 +384,7 @@ describe('whereDistanceWithin', () => {
       dedent`
       SELECT \`id\`
       FROM \`locations\`
-      WHERE ST_DWithin(\`a_location\`, \`a_point\`, 100)
+      WHERE ST_DWithin("a_location", "a_point", 100)
       ORDER BY \`distance\` ASC`,
     );
   });
@@ -414,7 +414,7 @@ describe('selectIntersection', () => {
       .toNative();
 
     expect(fmt(query.sql)).toBe(dedent`
-    SELECT ST_Intersection(\`location\`, 'POINT(-104.128 39.87)'::geography) AS \`intersection\`
+    SELECT ST_Intersection("location", 'POINT(-104.128 39.87)'::geography) AS \`intersection\`
     FROM \`locations\``);
   });
 
@@ -470,7 +470,7 @@ describe('selectArea', () => {
       
     expect(fmt(query.sql)).toBe(dedent`
     SELECT \`id\`,
-      ST_Area(\`location\`) AS \`area\`
+      ST_Area("location") AS \`area\`
     FROM \`locations\``);
   });
 
@@ -505,7 +505,7 @@ describe('whereContains', () => {
     expect(fmt(query.sql)).toBe(dedent`
     SELECT \`id\`
     FROM \`locations\`
-    WHERE ST_Contains(\`location\`, 'POINT(-104.128 39.87)'::geography)`);
+    WHERE ST_Contains("location", 'POINT(-104.128 39.87)'::geography)`);
   });
 
   it('handles invalid shape', () => {

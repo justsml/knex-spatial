@@ -1,11 +1,3 @@
-// type ExplicitShape =
-//   | PointShape
-//   | CircleShape
-//   | LineShape
-//   | PolygonShape
-//   | MultiPolygonShape
-//   | MultiLineShape;
-
 type ShapeOrColumn = Shape | string;
 
 type ShapeColumnOrLiteral = Shape | string | number | boolean;
@@ -45,26 +37,3 @@ type Line = Point[];
 type Polygon = Point[];
 type MultiPolygon = Point[][];
 type MultiLine = Point[][];
-
-// type PointShape = {
-//   point: Point;
-// };
-// type CircleShape = {
-//   circle: Circle;
-// };
-// type LineShape = {
-//   line: Line;
-// };
-// type PolygonShape = {
-//   polygon: Polygon;
-// };
-// type MultiPolygonShape = {
-//   multiPolygon: MultiPolygon;
-// };
-// type MultiLineShape = {
-//   multiLine: MultiLine;
-// };
-// /** Note: Currently no '' multi point support. (Indistinguishable from Polygon & LineString.) */
-// type MultiPointShape = {
-//   multiPoint: Point[];
-// }
