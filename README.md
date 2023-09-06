@@ -696,7 +696,9 @@ See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 - [x] Add more docs
 - [x] Add more examples
 - [x] Intuitive Shape Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), verbose like SQL syntax.)
-- [ ] Add 'transformer' wrapper fn support for `ST_AsText`, `ST_asGeoJSON`, `ST_AsEWKT`. (Include `ST_AsBinary`?)
+- [ ] Add 'transformer' wrapper fn support for `ST_AsText`, `ST_AsGeoJSON`, `ST_AsEWKT`. (Include `ST_AsBinary`?)
+- [ ] Add global config for default select wrapper (`ST_AsText`, `ST_AsGeoJSON`, `ST_AsEWKT`.)
+- [ ] Add global config to treat undefined values as `null` or throw error.
 
 ## Dev Notes
 
