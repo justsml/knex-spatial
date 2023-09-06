@@ -96,7 +96,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS 'buffer'
+      SELECT ST_Buffer('POINT(-104.128 39.87)'::geography, 1000) AS buffer
       FROM \`locations\``,
     );
   });
@@ -113,7 +113,7 @@ describe('selectBuffer', () => {
       SELECT ST_Buffer(
           'POINT(-104.128 39.87)'::geography,
           10 * 1609.344
-        ) AS 'buffer'
+        ) AS buffer
       FROM \`locations\``,
     );
   });
@@ -127,7 +127,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer("location", 1000) AS 'buffer'
+      SELECT ST_Buffer("location", 1000) AS buffer
       FROM \`locations\``,
     );
   });
@@ -141,7 +141,7 @@ describe('selectBuffer', () => {
 
     expect(fmt(query.sql)).toBe(
       dedent`
-      SELECT ST_Buffer("location", 1000 * 1609.344) / 1609.344 AS 'buffer'
+      SELECT ST_Buffer("location", 1000 * 1609.344) / 1609.344 AS buffer
       FROM \`locations\``,
     );
   });

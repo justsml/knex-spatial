@@ -1,3 +1,12 @@
+
+export const parseMeasurementSafe = (s: string) => {
+  try {
+    return parseMeasurement(s);
+  } catch (e) {
+    return null;
+  }
+};
+
 /**
  * @public
  * 
@@ -6,12 +15,13 @@
  * ## Example
  *
  * ```js
- * parseHumanMeasurement('1 mile'); // { value: 1, unit: 'miles' }
+ * parseMeasurement('1 mile'); // { value: 1, unit: 'miles' }
  */
-export function parseHumanMeasurement(distanceString: string): {
+export function parseMeasurement(distanceString: string): {
   value: number;
   unit: Unit;
 } {
+  // Note: Don't use symmetric parsing here. `parseFloat` is doing some lift here.
   const value = parseFloat(distanceString);
   const unitString = distanceString.split(/[\d ]+/)[1];
   let unit: Unit = 'meters';

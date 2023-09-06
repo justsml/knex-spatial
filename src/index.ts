@@ -6,10 +6,18 @@ import {
   parseShapeOrColumnToSafeSql,
 } from './utils/shapeUtils';
 import sqlFunctionBuilder from './utils/functionBuilder';
-import { metersToUnitMathLiteral, unitToMetersMathLiteral } from './utils/units';
+import {
+  metersToUnitMathLiteral,
+  unitToMetersMathLiteral,
+} from './utils/units';
 
 // Re-export helpers
-export { sqlFunctionBuilder, convertShapeToSql, isValidShape, parseShapeOrColumnToSafeSql };
+export {
+  sqlFunctionBuilder,
+  convertShapeToSql,
+  isValidShape,
+  parseShapeOrColumnToSafeSql,
+};
 
 let _db: Knex;
 let _options: PluginOptions;
@@ -17,6 +25,14 @@ let _options: PluginOptions;
 type PluginOptions = {
   throwOnUndefined?: boolean;
 };
+
+/**
+ * A format for geography or geometry.
+ *
+ * Note: Use WKT for geometry, and EWKT for geography since it includes SRID.
+ */
+type ConvertFormat = 'geojson' | 'text' | 'ewkt' | 'wkt';
+const ConvertFormats = ['geojson', 'text', 'ewkt', 'wkt'] as const;
 
 export default function KnexSpatialPlugin(
   db: Knex,
@@ -68,13 +84,10 @@ export default function KnexSpatialPlugin(
  *
  * ## Example
  * ```ts
- * const selectDistance = selectBinaryFunctionColumnWrapper('ST_Distance', 'distance');
+ * const selectDistance = selectBinaryFunWrapper('ST_Distance', 'distance');
  * ```
  */
-const selectBinaryFunctionColumnWrapper = (
-  methodName: string,
-  defaultAlias: string,
-) =>
+const selectBinaryFunWrapper = (methodName: string, defaultAlias: string) =>
   function whereHelper<
     TRecord extends {} = any,
     TResult extends {} = unknown[],
@@ -84,16 +97,25 @@ const selectBinaryFunctionColumnWrapper = (
     rightShapeOrColumn: ShapeOrColumn,
     columnAlias = defaultAlias,
     useUnits: Unit = 'meters',
+    convertMode: ConvertFormat | undefined = undefined,
   ): Knex.QueryBuilder<TRecord, TResult> {
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
     const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
     if (!lhs || !rhs) return this;
-    const mathModifier = unitToMetersMathLiteral(useUnits);
-    return this.select(
-      _db.raw(`${methodName}(${lhs}, ${rhs})${mathModifier} as ??`, [
-        columnAlias,
-      ]),
-    );
+    let mathModifier = unitToMetersMathLiteral(useUnits);
+    // convert mode and math modifier are mutually exclusive (cannot ST_AsWKT(5))
+    // if last arguments is valid convert mode, set convertMode and clear mathModifier
+    convertMode = ConvertFormats.includes(arguments[arguments.length - 1])
+      ? arguments[arguments.length - 1]
+      : convertMode;
+    if (convertMode !== undefined) mathModifier = '';
+    const fnFragment = `${methodName}(${lhs}, ${rhs})${mathModifier}`;
+    const wrappedFragment =
+      convertMode && ConvertFormats.includes(convertMode)
+        ? `ST_As${convertMode.toUpperCase()}(${fnFragment})`
+        : fnFragment;
+
+    return this.select(_db.raw(`${wrappedFragment} as ??`, [columnAlias]));
   };
 
 /**
@@ -101,10 +123,7 @@ const selectBinaryFunctionColumnWrapper = (
  *
  * Examples include `ST_Area`, `ST_Length`, `ST_Centroid`, etc.
  */
-const selectUnaryFunctionColumnWrapper = (
-  methodName: string,
-  defaultAlias: string,
-) =>
+const selectUnaryFunWrapper = (methodName: string, defaultAlias: string) =>
   function whereHelper<
     TRecord extends {} = any,
     TResult extends {} = unknown[],
@@ -113,14 +132,18 @@ const selectUnaryFunctionColumnWrapper = (
     shapeOrColumn: ShapeOrColumn,
     columnAlias = defaultAlias,
     useUnits: Unit = 'meters',
+    convertMode: ConvertFormat | undefined = undefined,
   ): Knex.QueryBuilder<TRecord, TResult> {
+    const mathModifier = unitToMetersMathLiteral(useUnits);
     const lhs = parseShapeOrColumnToSafeSql(shapeOrColumn);
     if (!lhs) return this;
-    const mathModifier = unitToMetersMathLiteral(useUnits);
+    const fnFragment = `${methodName}(${lhs})${mathModifier}`;
+    const wrappedFragment =
+      convertMode && ConvertFormats.includes(convertMode)
+        ? `ST_As${convertMode.toUpperCase()}(${fnFragment})`
+        : fnFragment;
 
-    return this.select(
-      _db.raw(`${methodName}(${lhs})${mathModifier} as ??`, [columnAlias]),
-    );
+    return this.select(_db.raw(`${wrappedFragment} as ??`, [columnAlias]));
   };
 
 /**
@@ -160,22 +183,24 @@ const whereConditionalWrapper = (methodName: string) =>
     leftShapeOrColumn: ShapeOrColumn,
     rightShapeOrColumn: ShapeOrColumn,
     operator: keyof typeof Operators,
-    distance?: number,
+    distance?: number | string,
     useUnits: Unit = 'meters',
   ): Knex.QueryBuilder<TRecord, TResult> {
+    const mathModifier = unitToMetersMathLiteral(useUnits);
     if (!Operators[operator]) throw new Error(`Invalid operator: ${operator}`);
     const lhs = parseShapeOrColumnToSafeSql(leftShapeOrColumn);
     const rhs = parseShapeOrColumnToSafeSql(rightShapeOrColumn);
-    if (!lhs || !rhs) return this;
+    if (!lhs || !rhs || rightShapeOrColumn === undefined) return this;
 
     if (!distance || Number.isNaN(distance))
       throw new Error(
         'where: ' + methodName + ': Missing expression value (distance)',
       );
-    // if (useUnits === 'meters') distance = distance * 1609.34;
 
     return this.whereRaw(
-      `${methodName}(${lhs}, ${rhs}) ${operator} ${Number(distance)}`,
+      `${methodName}(${lhs}, ${rhs}) ${operator} ${Number(
+        distance,
+      )}${mathModifier}`,
     );
   };
 
@@ -223,17 +248,29 @@ function whereDistanceWithin<
   );
 }
 
-const selectArea = selectUnaryFunctionColumnWrapper('ST_Area', 'area');
-const selectCentroid = selectUnaryFunctionColumnWrapper('ST_Centroid', 'centroid',);
-const selectConvexHull = selectUnaryFunctionColumnWrapper('ST_ConvexHull', 'convex_hull',);
-const selectDifference = selectBinaryFunctionColumnWrapper('ST_Difference', 'difference');
-const selectDistanceSphere = selectBinaryFunctionColumnWrapper('ST_DistanceSphere', 'distance_sphere');
-const selectDistanceSpheroid = selectBinaryFunctionColumnWrapper('ST_DistanceSpheroid', 'distance_spheroid');
-const selectEnvelope = selectUnaryFunctionColumnWrapper('ST_Envelope', 'envelope',);
-const selectIntersection = selectBinaryFunctionColumnWrapper('ST_Intersection', 'intersection');
-const selectLength = selectUnaryFunctionColumnWrapper('ST_Length', 'length');
-const selectSymDifference = selectBinaryFunctionColumnWrapper('ST_SymDifference', 'sym_difference');
-const selectUnion = selectBinaryFunctionColumnWrapper('ST_Union', 'union');
+const selectArea = selectUnaryFunWrapper('ST_Area', 'area');
+const selectCentroid = selectUnaryFunWrapper('ST_Centroid', 'centroid');
+const selectConvexHull = selectUnaryFunWrapper('ST_ConvexHull', 'convex_hull');
+const selectDifference = selectBinaryFunWrapper('ST_Difference', 'difference');
+const selectDistanceSphere = selectBinaryFunWrapper(
+  'ST_DistanceSphere',
+  'distance_sphere',
+);
+const selectDistanceSpheroid = selectBinaryFunWrapper(
+  'ST_DistanceSpheroid',
+  'distance_spheroid',
+);
+const selectEnvelope = selectUnaryFunWrapper('ST_Envelope', 'envelope');
+const selectIntersection = selectBinaryFunWrapper(
+  'ST_Intersection',
+  'intersection',
+);
+const selectLength = selectUnaryFunWrapper('ST_Length', 'length');
+const selectSymDifference = selectBinaryFunWrapper(
+  'ST_SymDifference',
+  'sym_difference',
+);
+const selectUnion = selectBinaryFunWrapper('ST_Union', 'union');
 
 const whereContains = wherePredicateWrapper('ST_Contains');
 const whereContainsProperly = wherePredicateWrapper('ST_ContainsProperly');
@@ -255,18 +292,26 @@ function selectBuffer<TRecord extends {} = any, TResult extends {} = unknown[]>(
   distance: number | string,
   useUnits: Unit = 'meters',
   columnAlias = 'buffer',
+  convertMode: ConvertFormat | undefined = undefined,
 ): Knex.QueryBuilder<TRecord, TResult> {
   if (distance === undefined) return this;
   if (Number.isNaN(distance) || distance == null)
     throw new Error('selectBuffer: Missing distance');
+  let wrapperFn = convertMode && ConvertFormats.includes(convertMode) ? `ST_As${convertMode.toUpperCase()}` : undefined;
   const builder = sqlFunctionBuilder(_db);
   const fnExpr = builder('ST_Buffer')
     .arg(columnOrShape)
     .arg(distance)
     .unit(useUnits)
+    .wrap(wrapperFn)
     .alias(columnAlias);
 
-  return fnExpr._preventBuild ? this : this.select(_db.raw(fnExpr.build()));
+  // const wrappedFragment =
+  //   convertMode && ConvertFormats.includes(convertMode)
+  //     ? `ST_As${convertMode.toUpperCase()}(${fnExpr.toString()})`
+  //     : fnExpr.toString();
+
+  return fnExpr._preventBuild ? this : this.select(_db.raw(fnExpr));
 
   // return this;
 }
