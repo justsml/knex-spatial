@@ -1,13 +1,14 @@
 {
   "name": "knex-spatial-plugin",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A Knex plugin for simplified geometric & geospatial operations in Postgres.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "tsc",
-    "test": "vitest --coverage"
+    "test": "vitest --coverage",
+    "test:postgres": "TEST_MODE=pg vitest --coverage"
   },
   "keywords": [
     "knex",
@@ -46,5 +47,8 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6",
     "vitest": "^0.34.1"
+  },
+  "optionalDependencies": {
+    "pg": "^8.11.3"
   }
 }

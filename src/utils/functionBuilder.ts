@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 import { isValidShape, parseShapeOrColumnToSafeSql, shapeContainsUndefined } from './shapeUtils';
-import { hasUnits, metersToUnitMathLiteral, parseHumanMeasurement, unitToMetersMathLiteral } from './units';
-import { safeColumn } from './escaping';
+import { hasUnits, metersToUnitMathLiteral, parseMeasurement, unitToMetersMathLiteral } from './units';
+import { safeColumn, safeColumnExpression } from './escaping';
 
 export default function sqlFunctionBuilder(db: Knex) {
   return (name?: string) => new SqlFunctionBuilder(db).name(name!);
@@ -61,7 +61,7 @@ class SqlFunctionBuilder {
       if (typeof _arg === 'string') {
         const isHumanReadableUnit = hasUnits(_arg);
         if (isHumanReadableUnit) {
-          const {value, unit} = parseHumanMeasurement(_arg);
+          const {value, unit} = parseMeasurement(_arg);
           this._arguments.push(`${value}${unitToMetersMathLiteral(unit)}`);
           return this;
         }
@@ -84,7 +84,8 @@ class SqlFunctionBuilder {
     return this;
   }
 
-  wrap(aggregateFn: string) {
+  wrap(aggregateFn: string | undefined) {
+    if (!aggregateFn) return this;
     this._aggregateFns.push(aggregateFn);
     return this;
   }
@@ -92,10 +93,11 @@ class SqlFunctionBuilder {
   build() {
     if (this._preventBuild) return '';
     const { _db, _name, _arguments, _unit, _alias, _aggregateFns } = this;
+    // console.log('fn', _name)
     const fn = _db.raw(`${_name}(${_arguments.join(', ')})`);
     const fnWithUnit = `${fn}${metersToUnitMathLiteral(_unit)}`;
     const aggFns = _aggregateFns.reduce((acc, fn) => `${fn}(${acc})`, fnWithUnit)
-    const fnColumnExpression = _alias ? `${aggFns} AS ${safeColumn(_alias)}` : fnWithUnit;
+    const fnColumnExpression = _alias ? `${aggFns} AS ${safeColumnExpression(_alias)}` : fnWithUnit;
     return fnColumnExpression;
   }
 

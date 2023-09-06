@@ -1,12 +1,12 @@
 import { saferSql } from './escaping';
-import { hasUnits, parseHumanMeasurement, unitToMetersMathLiteral } from './units';
+import { hasUnits, parseMeasurement, unitToMetersMathLiteral } from './units';
 
 /**
  * Utility functions for working with PostGIS shapes & columns.
  * @param shapeOrColumn
  */
 export function parseShapeOrColumnToSafeSql(
-  shapeOrColumn: ShapeColumnOrLiteral | undefined,
+  shapeOrColumn: ShapeColumnOrLiteral | undefined | null,
 ): string | undefined {
   // if (typeof shapeOrColumn === 'string') return '`' + shapeOrColumn.replace(/[`"]+/gm, '') + '`';
   if (typeof shapeOrColumn === 'number')
@@ -14,7 +14,7 @@ export function parseShapeOrColumnToSafeSql(
   if (typeof shapeOrColumn === 'boolean') return shapeOrColumn.toString();
   // TODO: Add better check for column expressions  (defend against Sql Injection)
   if (typeof shapeOrColumn === 'string')
-    return '`' + saferSql`${shapeOrColumn}` + '`';
+    return '"' + saferSql`${shapeOrColumn}` + '"';
   if (typeof shapeOrColumn === 'object' && shapeOrColumn !== null)
     return convertShapeToSql(shapeOrColumn);
 
@@ -32,7 +32,7 @@ export function convertShapeToSql(s: Shape | undefined): string | undefined {
 
   if (isCircle(s)) {
     const c = s;
-    const rad = typeof c.radius === 'string' && hasUnits(c.radius) ? parseHumanMeasurement(c.radius) : {unit: 'meters', value: c.radius}
+    const rad = typeof c.radius === 'string' && hasUnits(c.radius) ? parseMeasurement(c.radius) : {unit: 'meters', value: c.radius}
     return `ST_Buffer('${srid}POINT(${getX(c)} ${getY(c)})'::${castType}, ${
       rad.value
     }${unitToMetersMathLiteral(rad.unit as Unit)})`;
@@ -59,6 +59,9 @@ export function convertShapeToSql(s: Shape | undefined): string | undefined {
       .map((p) => `${getX(p)} ${getY(p)}`)
       .join(', ')})'::${castType}`;
 }
+
+
+
 
 export const isValidShape = (p: unknown): boolean =>
   Array.isArray(p)
@@ -132,8 +135,8 @@ export const isValidPoint = (p: unknown) => isValidLatLon(p) || isValidXY(p);
 //   // if ('multiPoint' in shape && isMultiLine(shape.multiPoint)) return shape.multiPoint;
 // }
 
-const getX = (p: Point) => ('x' in p ? p.x : p.lon);
-const getY = (p: Point) => ('y' in p ? p.y : p.lat);
+const getX = (p: Point) => Number('x' in p ? p.x : p.lon);
+const getY = (p: Point) => Number('y' in p ? p.y : p.lat);
 /**
  * **Note:** Shorthand arrays of Points may look like either Lines or Polygons.
  * The system detects a Polygon when Points[] have the same start and end coordinates. */

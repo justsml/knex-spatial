@@ -1,18 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { parseHumanMeasurement, unitToMetersMathLiteral } from "./units";
+import { parseMeasurement, unitToMetersMathLiteral } from "./units";
 
-describe("parseHumanMeasurement", () => {
+describe("parseMeasurement", () => {
 
   it("should throw on invalid unit: 'boop'", () => {
-    expect(() => parseHumanMeasurement("1 boop")).toThrow();
+    expect(() => parseMeasurement("1 boop")).toThrow();
   });
 
   it("should handle shorthand unit: 'm'", () => {
-    expect(parseHumanMeasurement("1 m")).toEqual({ value: 1, unit: "meters" });
+    expect(parseMeasurement("1 m")).toEqual({ value: 1, unit: "meters" });
   });
 
   it("should handle unit: 'kilometer'", () => {
-    expect(parseHumanMeasurement("1 kilometer")).toEqual({ value: 1, unit: "kilometers" });
+    expect(parseMeasurement("1 kilometer")).toEqual({ value: 1, unit: "kilometers" });
   });
 
 });

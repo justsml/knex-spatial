@@ -43,6 +43,8 @@ Featuring a fluent, expressive and natural API design.
   - [Knex Query Builder Example](#knex-query-builder-example)
 - [References](#references)
 - [TODO](#todo)
+- [Dev Notes](#dev-notes)
+  - [Unit Helpers](#unit-helpers)
 
 ## Get Started
 
@@ -75,9 +77,9 @@ Uses the `ST_Distance` function.
 **Note:** Intelligently handles `undefined` lat & lon values by returning the query without modification.
 
 ```ts
-import {db} from './knex';
+import { db } from './knex';
 
-export function findNearbyLocations({lat, lon}) {
+export function findNearbyLocations({ lat, lon }) {
   // Get locations within 10Km of input location, **including** the distance in the results
   return db('locations')
     .select('id', 'name')
@@ -114,11 +116,11 @@ Uses the `ST_Distance` & `ST_DWithin` function.
 **Note:** Intelligently handles `undefined` lat & lon values by returning the query without modification.
 
 ```ts
-export function findNearbyLocations({lat, lon}) {
+export function findNearbyLocations({ lat, lon }) {
   // Get locations within 10Km of input location, without including the distance in the results
   return db('locations')
     .select('id', 'name')
-    .whereDistanceWithin('location', { lat, lon, radius: 10000 })
+    .whereDistanceWithin('location', { lat, lon, radius: 10000 });
 }
 ```
 
@@ -133,12 +135,12 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`area_in_meters`|
-|---|---|
-|England|130,279,000,000|
-|Ireland|70,278,000,000|
-|South Africa|1,221,037,630,000|
-|United States|9,147,420,000,000|
+| `country_name` | `area_in_meters`  |
+| -------------- | ----------------- |
+| England        | 130,279,000,000   |
+| Ireland        | 70,278,000,000    |
+| South Africa   | 1,221,037,630,000 |
+| United States  | 9,147,420,000,000 |
 
 ```ts
 db('world_countries')
@@ -149,12 +151,12 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`area_in_km2`|
-|---|---|
-|England|130,279,000|
-|Ireland|70,278,000|
-|South Africa|1,221,037,630|
-|United States|9,147,420,000|
+| `country_name` | `area_in_km2` |
+| -------------- | ------------- |
+| England        | 130,279,000   |
+| Ireland        | 70,278,000    |
+| South Africa   | 1,221,037,630 |
+| United States  | 9,147,420,000 |
 
 ```ts
 db('world_countries')
@@ -168,12 +170,12 @@ db('world_countries')
 // ORDER BY "area_in_miles" DESC;
 ```
 
-|`country_name`|`area_in_miles`|
-|---|---|
-|United States|5,650,000|
-|South Africa|754,000|
-|England|80,700.8|
-|Ireland|43,500.5|
+| `country_name` | `area_in_miles` |
+| -------------- | --------------- |
+| United States  | 5,650,000       |
+| South Africa   | 754,000         |
+| England        | 80,700.8        |
+| Ireland        | 43,500.5        |
 
 ### `selectCentroid`
 
@@ -186,12 +188,12 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`centroid`|
-|---|---|
-|England|`POINT(-1.474054 52.795479)`|
-|Ireland|`POINT(-8.137935 53.175503)`|
-|South Africa|`POINT(25.083901 -29.000341)`|
-|United States|`POINT(-112.599438 45.705628)`|
+| `country_name` | `centroid`                     |
+| -------------- | ------------------------------ |
+| England        | `POINT(-1.474054 52.795479)`   |
+| Ireland        | `POINT(-8.137935 53.175503)`   |
+| South Africa   | `POINT(25.083901 -29.000341)`  |
+| United States  | `POINT(-112.599438 45.705628)` |
 
 ### `selectConvexHull`
 
@@ -204,19 +206,23 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`convex_hull`|
-|---|---|
-|England|`POLYGON((-5.270157 50.056137,-5.270157 55.811741,1.762726 55.811741,1.762726 50.056137,-5.270157 50.056137))`|
-|Ireland|`POLYGON((-10.4786 51.4457,-10.4786 55.3878,-5.3319 55.3878,-5.3319 51.4457,-10.4786 51.4457))`|
-|South Africa|`POLYGON((16.344976 -34.819168,16.344976 -22.125026,32.895474 -22.125026,32.895474 -34.819168,16.344976 -34.819168))`|
-|United States|`POLYGON((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967))`|
+| `country_name` | `convex_hull`                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| England        | `POLYGON((-5.270157 50.056137,-5.270157 55.811741,1.762726 55.811741,1.762726 50.056137,-5.270157 50.056137))`           |
+| Ireland        | `POLYGON((-10.4786 51.4457,-10.4786 55.3878,-5.3319 55.3878,-5.3319 51.4457,-10.4786 51.4457))`                          |
+| South Africa   | `POLYGON((16.344976 -34.819168,16.344976 -22.125026,32.895474 -22.125026,32.895474 -34.819168,16.344976 -34.819168))`    |
+| United States  | `POLYGON((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967))` |
 
 ### `selectDifference`
 
 ```ts
 db('world_countries')
   .select('country_name')
-  .selectDifference('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'difference')
+  .selectDifference(
+    'country_border',
+    { lat: 39.87, lon: -104.128, radius: '10mi' },
+    'difference',
+  )
   .where({ country_name: 'United States' });
 // SELECT "country_name",
 //   ST_Difference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "difference"
@@ -224,16 +230,20 @@ db('world_countries')
 // WHERE "country_name" = 'United States';
 ```
 
-|`country_name`|`difference`|
-|---|---|
-|United States|`MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))`|
+| `country_name` | `difference`                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| United States  | `MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))` |
 
 ### `selectIntersection`
 
 ```ts
 db('world_countries')
   .select('country_name')
-  .selectIntersection('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'intersection')
+  .selectIntersection(
+    'country_border',
+    { lat: 39.87, lon: -104.128, radius: '10mi' },
+    'intersection',
+  )
   .where({ country_name: 'United States' });
 // SELECT "country_name",
 //   ST_Intersection("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "intersection"
@@ -241,9 +251,9 @@ db('world_countries')
 // WHERE "country_name" = 'United States';
 ```
 
-|`country_name`|`intersection`|
-|---|---|
-|United States|`MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))`|
+| `country_name` | `intersection`                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| United States  | `MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))` |
 
 ### `selectEnvelope`
 
@@ -256,12 +266,12 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`envelope`|
-|---|---|
-|England|`POLYGON((-5.270157 50.056137,-5.270157 55.811741,1.762726 55.811741,1.762726 50.056137,-5.270157 50.056137))`|
-|Ireland|`POLYGON((-10.4786 51.4457,-10.4786 55.3878,-5.3319 55.3878,-5.3319 51.4457,-10.4786 51.4457))`|
-|South Africa|`POLYGON((16.344976 -34.819168,16.344976 -22.125026,32.895474 -22.125026,32.895474 -34.819168,16.344976 -34.819168))`|
-|United States|`POLYGON((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967))`|
+| `country_name` | `envelope`                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| England        | `POLYGON((-5.270157 50.056137,-5.270157 55.811741,1.762726 55.811741,1.762726 50.056137,-5.270157 50.056137))`           |
+| Ireland        | `POLYGON((-10.4786 51.4457,-10.4786 55.3878,-5.3319 55.3878,-5.3319 51.4457,-10.4786 51.4457))`                          |
+| South Africa   | `POLYGON((16.344976 -34.819168,16.344976 -22.125026,32.895474 -22.125026,32.895474 -34.819168,16.344976 -34.819168))`    |
+| United States  | `POLYGON((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967))` |
 
 ### `selectLength`
 
@@ -274,19 +284,23 @@ db('world_countries')
 // FROM "world_countries";
 ```
 
-|`country_name`|`border_in_miles`|
-|---|---|
-|England|2,795|
-|Ireland|2,000|
-|South Africa|4,000|
-|United States|13,000|
+| `country_name` | `border_in_miles` |
+| -------------- | ----------------- |
+| England        | 2,795             |
+| Ireland        | 2,000             |
+| South Africa   | 4,000             |
+| United States  | 13,000            |
 
 ### `selectSymDifference`
 
 ```ts
 db('world_countries')
   .select('country_name')
-  .selectSymDifference('country_border', { lat: 39.87, lon: -104.128, radius: '10mi' }, 'sym_difference')
+  .selectSymDifference(
+    'country_border',
+    { lat: 39.87, lon: -104.128, radius: '10mi' },
+    'sym_difference',
+  )
   .where({ country_name: 'United States' });
 // SELECT "country_name",
 //   ST_SymDifference("country_border", ST_Buffer('Point(-104.128, 39.87)'::geography, 10 * 1609.344)) AS "sym_difference"
@@ -294,16 +308,25 @@ db('world_countries')
 // WHERE "country_name" = 'United States';
 ```
 
-|`country_name`|`sym_difference`|
-|---|---|
-|United States|`MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))`|
+| `country_name` | `sym_difference`                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| United States  | `MULTIPOLYGON(((-124.731422 24.955967,-124.731422 49.371735,-66.969849 49.371735,-66.969849 24.955967,-124.731422 24.955967)))` |
 
 ### `selectUnion`
 
 ```ts
 db('world_countries')
   .select('country_name')
-  .selectUnion('country_border', [{lat: 39.87, lon: -104.128}, {lat: 39.17, lon: -104.92}, {lat: 39.25, lon: -105.01}, {lat: 39.87, lon: -104.128}],  'union')
+  .selectUnion(
+    'country_border',
+    [
+      { lat: 39.87, lon: -104.128 },
+      { lat: 39.17, lon: -104.92 },
+      { lat: 39.25, lon: -105.01 },
+      { lat: 39.87, lon: -104.128 },
+    ],
+    'union',
+  )
   .where({ country_name: 'England' });
 // SELECT "country_name",
 //   ST_Union("country_border") AS "union"
@@ -324,9 +347,9 @@ db('world_countries')
 // WHERE ST_Contains("country_border", ST_Point(-104.128, 39.87));
 ```
 
-|`country_name`|`border_in_miles`|
-|---|---|
-|United States|13,000|
+| `country_name` | `border_in_miles` |
+| -------------- | ----------------- |
+| United States  | 13,000            |
 
 ### `whereContainsProperly`
 
@@ -341,9 +364,9 @@ db('world_countries')
 // WHERE ST_ContainsProperly("country_border", ST_Buffer('Point(-1.474054, 52.795479)'::geography, 1000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|England|2,795|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| England        | 2,795          |
 
 ### `whereCovers`
 
@@ -358,9 +381,9 @@ db('world_countries')
 // WHERE ST_Covers("country_border", ST_Point(-104.128, 39.87));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereCoveredBy`
 
@@ -375,9 +398,9 @@ db('world_countries')
 // WHERE ST_CoveredBy("country_border", ST_Point(-104.128, 39.87));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereCrosses`
 
@@ -392,9 +415,9 @@ db('world_countries')
 // WHERE ST_Crosses("country_border", ST_Point(-104.128, 39.87));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereDisjoint`
 
@@ -409,11 +432,11 @@ db('world_countries')
 // WHERE ST_Disjoint("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|England|2,795|
-|Ireland|2,000|
-|United States|13,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| England        | 2,795          |
+| Ireland        | 2,000          |
+| United States  | 13,000         |
 
 ### `whereEquals`
 
@@ -428,9 +451,9 @@ db('world_countries')
 // WHERE ST_Equals("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereIntersects`
 
@@ -445,9 +468,9 @@ db('world_countries')
 // WHERE ST_Intersects("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereOverlaps`
 
@@ -462,24 +485,28 @@ db('world_countries')
 // WHERE ST_Overlaps("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereRelate`
 
 ```ts
 db('world_countries')
   .select('country_name')
-  .whereRelate('country_border', { lat: -26.2041, lon: 28.0473, radius: '10km' }, 'nineElementMatrix')
+  .whereRelate(
+    'country_border',
+    { lat: -26.2041, lon: 28.0473, radius: '10km' },
+    'nineElementMatrix',
+  );
 // SELECT "country_name",
 // FROM "world_countries"
 // WHERE ST_Relate("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|
-|---|
-|South Africa|
+| `country_name` |
+| -------------- |
+| South Africa   |
 
 ### `whereTouches`
 
@@ -494,24 +521,26 @@ db('world_countries')
 // WHERE ST_Touches("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 10000));
 ```
 
-|`country_name`|`border_in_km`|
-|---|---|
-|South Africa|4,000|
+| `country_name` | `border_in_km` |
+| -------------- | -------------- |
+| South Africa   | 4,000          |
 
 ### `whereWithin`
 
 ```ts
-db('world_countries')
-  .select('country_name')
-  .whereWithin('country_border', { lat: -26.2041, lon: 28.0473, radius: '100km' })
+db('world_countries').select('country_name').whereWithin('country_border', {
+  lat: -26.2041,
+  lon: 28.0473,
+  radius: '100km',
+});
 // SELECT "country_name",
 // FROM "world_countries"
 // WHERE ST_Within("country_border", ST_Buffer('Point(-26.2041, 28.0473)'::geography, 100 * 1000));
 ```
 
-|`country_name`|
-|---|
-|South Africa|
+| `country_name` |
+| -------------- |
+| South Africa   |
 
 ## Expressive Shape API
 
@@ -576,20 +605,20 @@ convertShapeToSql({ lat: 39.87, lon: -104.128 });
 ### Example
 
 ```ts
-import {sqlFunctionBuilder} from 'knex-spatial-plugin';
+import { sqlFunctionBuilder } from 'knex-spatial-plugin';
 
 const sqlFn = sqlFunctionBuilder(db);
 
 sqlFn('ST_Distance')
   .arg('point')
-  .arg({lat: 39.87, lon: -104.128})
+  .arg({ lat: 39.87, lon: -104.128 })
   .alias('distance')
   .build();
 // => ST_Distance("point", 'Point(-104.128 39.87)'::geography) AS "distance"
 
 sqlFn('ST_DWithin')
   .arg('polygon_column')
-  .arg({lat: 39.87, lon: -104.128})
+  .arg({ lat: 39.87, lon: -104.128 })
   .arg('5 miles')
   .toString(); // Alias for .build()
 // => ST_DWithin("polygon_column", 'Point(-104.128 39.87)'::geography, 5 * 1609.344)
@@ -602,17 +631,21 @@ Use the `sqlFunctionBuilder`'s native `Knex.Raw` support to easily build complex
 ```ts
 db('locations')
   .select('name')
-  .select(sqlFn('ST_Distance')
-    .arg('location')
-    .arg({lat: 39.87, lon: -104.128})
-    .alias('distance')
-    .unit('miles')
-    .toRaw())
-  .where(sqlFn('ST_DWithin')
-    .arg('location')
-    .arg({lat: 39.87, lon: -104.128})
-    .arg('65 miles')
-    .toRaw())
+  .select(
+    sqlFn('ST_Distance')
+      .arg('location')
+      .arg({ lat: 39.87, lon: -104.128 })
+      .alias('distance')
+      .unit('miles')
+      .toRaw(),
+  )
+  .where(
+    sqlFn('ST_DWithin')
+      .arg('location')
+      .arg({ lat: 39.87, lon: -104.128 })
+      .arg('65 miles')
+      .toRaw(),
+  )
   .orderBy('distance');
 // SELECT "name",
 //   ST_Distance("location", 'Point(-104.128 39.87)'::geography) / 1609.344 AS "distance"
@@ -621,37 +654,31 @@ db('locations')
 // ORDER BY "distance" ASC
 ```
 
-|`name`|`distance`|
-|---|---|
-|Denver|0|
-|Boulder|38.5|
-|Colorado Springs|60.5|
+| `name`           | `distance` |
+| ---------------- | ---------- |
+| Denver           | 0          |
+| Boulder          | 38.5       |
+| Colorado Springs | 60.5       |
 
 ```ts
 db('locations')
   .select('name')
-  .select(sqlFn('ST_Y')
-    .arg('location')
-    .alias('latY')
-    .toRaw())
-  .select(sqlFn('ST_X')
-    .arg('location')
-    .alias('lonX')
-    .toRaw())
+  .select(sqlFn('ST_Y').arg('location').alias('latY').toRaw())
+  .select(sqlFn('ST_X').arg('location').alias('lonX').toRaw());
 // SELECT "name",
 //   ST_Y("location") AS "latY",
 //   ST_X("location") AS "lonX"
 // FROM "locations";
 ```
 
-|`name`|`latY`|`lonX`|
-|---|---|---|
-|Denver|39.87|-104.128|
-|Las Vegas|36.17|-115.14|
-|Johannesburg|-26.2041|28.0473|
-|Dublin|53.3498|-6.2603|
-|London|51.5074|-0.1278|
-|D.C.|38.9072|-77.0369|
+| `name`       | `latY`   | `lonX`   |
+| ------------ | -------- | -------- |
+| Denver       | 39.87    | -104.128 |
+| Las Vegas    | 36.17    | -115.14  |
+| Johannesburg | -26.2041 | 28.0473  |
+| Dublin       | 53.3498  | -6.2603  |
+| London       | 51.5074  | -0.1278  |
+| D.C.         | 38.9072  | -77.0369 |
 
 See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 
@@ -668,4 +695,68 @@ See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 - [x] Add more methods.
 - [x] Add more docs
 - [x] Add more examples
-- [x] Build simple WKT Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), too verbose.)
+- [x] Intuitive Shape Builder (tried using [`knex-postgis`](https://github.com/jfgodoy/knex-postgis), verbose like SQL syntax.)
+- [ ] Add 'transformer' wrapper fn support for `ST_AsText`, `ST_asGeoJSON`, `ST_AsEWKT`. (Include `ST_AsBinary`?)
+
+## Dev Notes
+
+This project evolved from a narrowly scoped helper - with these initial goals:
+
+- **_Find nearby things, sort by distance._**
+- Follow Knex' API design as closely as possible (builder AKA chainable methods)
+- Use natural language for measurements (e.g. `5 miles` instead of `8046.72` meters)
+
+After some initial positive feedback, I got asked to support all the PostGIS methods.
+There were 2 divergent paths I could take:
+
+1. Focus on flexible & fluent support for "common" cases.
+   - For example, a buffered version of a shape column: `.selectBuffer('area', '0.1km')`
+   - Add computed distance to `SELECT`: `.selectDistance('location', { lat, lon })`
+   - Filter by distance `WHERE`: `.whereDistanceWithin('location', { lat, lon, radius: '10km' })`
+   - Cons: This limits nested or fancy expression patterns.
+2. Build one standalone module meant to plug wherever `knex` `raw` is supported - somewhat like `knex-postgis`' design.
+   - Then afterward add `.select*()` and `.where*()` style-helpers.
+   - A funny thing happened on the way to building #1, I realized I needed a SQL function builder anyway.
+
+Turns out my attempt at a shortcut - by building a SQL fragment/template-based approach - was a little shortsighted. I ended up building an [SQL builder anyway.](./src/utils/functionBuilder.ts) Might include `knex-postgis` after all... TBD.
+
+| So, why didn't you build on top of `knex-postgis`?
+
+I may still do so.
+
+**For now, I prioritized a fluent API over 1:1 SQL syntax support.**
+
+I really enjoy Knex' API design, and I wanted to extend it in such a way that - dare I say - improved on native SQL OGC syntax. (It appears `knex-postgis` primary goal is supporting SQL syntax faithfully 1:1, which they do fabulously.)
+
+I looked into extending their API so you could chain things in a possibly friendlier way. It felt like I was compromising their API design goals.
+
+```ts
+// To generate: ST_AsText(ST_Centroid('geom'))
+// knex-postgis API is very close to the SQL it represents 1:1
+st.asText(st.centroid('geom'))
+  // However, I'd prefer a more 'fluent' API extended into knex.
+  .selectCentroid('geom', 'ST_AsText');
+// Perhaps using `functionBuilder` like so:
+builder('ST_Centroid').arg('geom').wrap('ST_asText');
+```
+
+```ts
+// Compare the knex-postgis example:
+let q = db
+  .select('id', st.asText(st.centroid('geom')).as('centroid'))
+  .from('geometries');
+q = db
+   .select('id')
+   .selectCentroid('geom', 'asText')
+   .from('geometries');
+
+// => SELECT "id", ST_AsText(ST_Centroid("geom")) AS "centroid" FROM "geometries"
+st.geomFromText('Point(0 0)', 4326);
+```
+
+### Unit Helpers
+
+As for the helpers around `units`, some notes:
+
+- Yes, I am aware units is a far more complicated topic than this. I don't personally care about historical or nautical units, I just want to be able to use natural language for common measurements. (PRs welcome of course.)
+- I had trouble using the most popular units conversion library on NPM. One thing I was initially trying to handle was European denoted numbers, like `1.234.567,12 km` (swapped comma & decimal points.) I decided locale support was out of scope - at least until v3.
