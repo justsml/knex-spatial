@@ -701,6 +701,7 @@ See the [tests for more examples.](./src/utils/functionBuilder.test.ts)
 - [ ] Add 'transformer' wrapper fn support for `ST_AsText`, `ST_AsGeoJSON`, `ST_AsEWKT`. (Include `ST_AsBinary`?)
 - [ ] Add global config for default select wrapper (`ST_AsText`, `ST_AsGeoJSON`, `ST_AsEWKT`.)
 - [ ] Add global config to treat undefined values as `null` or throw error.
+- [ ] Add smarts for 2d & 3d unit support.
 
 ## Dev Notes
 
