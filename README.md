@@ -8,6 +8,8 @@ A Knex plugin for easy operations on geometric & geospatial data in Postgres.
 
 Featuring a fluent, expressive and natural API design.
 
+⚠️ **Warning:** This plugin is still in early development. Sql injection prevention being validated. Please report any issues you find. ⚠️
+
 - [Get Started](#get-started)
 - [Methods](#methods)
   - [`selectDistance`](#selectdistance)
