@@ -15,8 +15,9 @@ let connection: any =
 export const db = Knex({
   asyncStackTraces: true,
   compileSqlOnError: true,
-  client: testMode, // Using SQLite because we aren't using a DB here, just emitting the generated SQL
   useNullAsDefault: true,
+  // Using SQLite because we aren't using a DB here, just emitting the generated SQL
+  client: testMode,
   connection,
 });
 
