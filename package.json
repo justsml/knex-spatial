@@ -1,6 +1,6 @@
 {
   "name": "knex-spatial-plugin",
-  "version": "2.1.1",
+  "version": "2.4.0",
   "description": "A Knex plugin for simplified geometric & geospatial operations in Postgres.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -33,13 +33,12 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "knex": "^2.5.1"
+    "knex": "*"
   },
   "devDependencies": {
     "@sqltools/formatter": "^1.2.5",
     "@vitest/coverage-v8": "^0.34.1",
     "dedent-js": "^1.0.1",
-    "knex": "^2.5.1",
     "nyc": "^15.1.0",
     "prettier": "^3.0.1",
     "sqlite3": "^5.1.6",
